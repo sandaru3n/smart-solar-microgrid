@@ -1,0 +1,30 @@
+# React
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+
+# C# / Visual Studio
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+appsettings.Local.json
+
+# Android
+.gradle/
+.kotlin/
+**/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.jks
+*.keystore
+
+# IDE / operating system
+.idea/
+.DS_Store
+Thumbs.db
