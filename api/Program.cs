@@ -1,5 +1,11 @@
+using System.Text;
+using System.Text.Json.Serialization;
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using SolarGrid.Api.Data;
+using SolarGrid.Api.Repositories;
+using SolarGrid.Api.Services;
 
 Env.Load("../.env");
 
@@ -15,12 +21,50 @@ var mongoSettings = new MongoDbSettings
         ?? throw new InvalidOperationException("MONGODB_DATABASE_NAME is missing from .env")
 };
 
+// JWT secret
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
+    ?? throw new InvalidOperationException("JWT_SECRET is missing from .env");
+
 // Register MongoDB
 builder.Services.AddSingleton(mongoSettings);
 builder.Services.AddSingleton<MongoDbContext>();
 
-// Add services to the container
-builder.Services.AddControllers();
+// Register repositories
+builder.Services.AddSingleton<UserRepository>();
+
+// Register services
+builder.Services.AddSingleton<UserService>();
+builder.Services.AddSingleton<JwtService>();
+
+// Configure JWT authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSecret)
+            ),
+
+            ValidateIssuer = false,
+            ValidateAudience = false,
+
+            ValidateLifetime = true,
+
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+// Add controllers
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        );
+    });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -36,6 +80,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Authentication must come before authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
