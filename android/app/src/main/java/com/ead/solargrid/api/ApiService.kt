@@ -10,17 +10,8 @@ interface ApiService {
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    @Multipart
     @POST("api/auth/register/start")
-    suspend fun registerStart(
-        @Part("nic") nic: RequestBody,
-        @Part("name") name: RequestBody,
-        @Part("email") email: RequestBody,
-        @Part("password") password: RequestBody,
-        @Part("phone") phone: RequestBody?,
-        @Part("address") address: RequestBody?,
-        @Part nicDocument: MultipartBody.Part
-    ): Response<RegisterStartResponse>
+    suspend fun registerStart(@Body request: RegisterStartRequest): Response<RegisterStartResponse>
 
     @POST("api/auth/register/verify-otp")
     suspend fun verifyOtp(@Body request: VerifyOtpRequest): Response<User>
@@ -44,13 +35,30 @@ interface ApiService {
     suspend fun getReservationSummary(): Response<ReservationSummaryResponse>
 
     /** Staff reservation list. dateUtc is the UTC day of the slot start (yyyy-MM-dd). */
+    /** q matches station name text or a full reservation id. */
     @GET("api/reservations")
     suspend fun getReservations(
         @Query("status") status: String? = null,
         @Query("dateUtc") dateUtc: String? = null,
         @Query("page") page: Int? = null,
-        @Query("pageSize") pageSize: Int? = null
+        @Query("pageSize") pageSize: Int? = null,
+        @Query("stationId") stationId: String? = null,
+        @Query("q") query: String? = null
     ): Response<ReservationPageResponse>
+
+    /** Staff only, for a Pending reservation whose slot has not started. */
+    @PATCH("api/reservations/{id}/approve")
+    suspend fun approveReservation(
+        @Path("id") id: String,
+        @Body body: ReservationActionRequest
+    ): Response<ReservationActionResponse>
+
+    /** Staff only, for a Pending reservation. Releases the slot capacity. */
+    @PATCH("api/reservations/{id}/reject")
+    suspend fun rejectReservation(
+        @Path("id") id: String,
+        @Body body: ReservationActionRequest
+    ): Response<ReservationActionResponse>
 
     @GET("api/reservations/mine")
     suspend fun getMyReservations(

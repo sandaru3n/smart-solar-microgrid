@@ -22,7 +22,7 @@ public class PendingRegistration
     public DateTime OtpExpiry { get; set; }
     public int OtpAttempts { get; set; } = 0;
 
-    public string NicDocumentId { get; set; } = string.Empty;
+    public string NicImageUrl { get; set; } = string.Empty;
 
     public bool IsEmailVerified { get; set; } = false;
 

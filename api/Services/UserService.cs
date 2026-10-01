@@ -48,7 +48,7 @@ public class UserService
             Role = Role.PROSUMER,
             AccountStatus = AccountStatus.PENDING,
             EmailVerified = true,
-            NicDocumentId = p.NicDocumentId,
+            NicImageUrl = p.NicImageUrl,
             NicVerificationStatus = "PENDING_REVIEW",
             CreatedDate = p.CreatedDate
         }).ToList();
@@ -98,31 +98,13 @@ public class UserService
             return (false, "This NIC is already registered.", null);
         }
 
-        if (request.NicDocument == null || request.NicDocument.Length == 0)
+        if (string.IsNullOrEmpty(request.NicImageUrl))
         {
-            return (false, "NIC document is required.", null);
-        }
-
-        if (request.NicDocument.Length > 5 * 1024 * 1024)
-        {
-            return (false, "NIC document must not exceed 5 MB.", null);
-        }
-
-        var ext = System.IO.Path.GetExtension(request.NicDocument.FileName).ToLowerInvariant();
-        if (ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".pdf")
-        {
-            return (false, "Only JPG, JPEG, PNG, and PDF files are allowed.", null);
+            return (false, "NIC image URL is required.", null);
         }
 
         var otp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         var otpHash = BCrypt.Net.BCrypt.HashPassword(otp);
-
-        string nicDocumentId = string.Empty;
-        using (var stream = request.NicDocument.OpenReadStream())
-        {
-            var objectId = await _dbContext.GridFSBucket.UploadFromStreamAsync(request.NicDocument.FileName, stream);
-            nicDocumentId = objectId.ToString();
-        }
 
         var pending = new PendingRegistration
         {
@@ -133,7 +115,7 @@ public class UserService
             Phone = request.Phone?.Trim() ?? string.Empty,
             Address = request.Address?.Trim() ?? string.Empty,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            NicDocumentId = nicDocumentId,
+            NicImageUrl = request.NicImageUrl,
             OtpHash = otpHash,
             OtpExpiry = DateTime.UtcNow.AddMinutes(10),
             CreatedDate = DateTime.UtcNow,
@@ -398,10 +380,7 @@ public async Task<(bool Success, string Message)> RejectRegistrationAsync(string
 
     await _pendingRegistrationRepository.DeleteAsync(pending.Id!);
 
-    if (!string.IsNullOrEmpty(pending.NicDocumentId))
-    {
-        try { await _dbContext.GridFSBucket.DeleteAsync(new MongoDB.Bson.ObjectId(pending.NicDocumentId)); } catch {}
-    }
+
 
     await _emailService.SendEmailAsync(pending.Email, "Registration Rejected", 
         $"Your registration for Smart Solar Microgrid has been rejected by the backoffice team.\n\nReason: {reason}\n\nPlease correct the issues and try registering again.");
@@ -409,62 +388,29 @@ public async Task<(bool Success, string Message)> RejectRegistrationAsync(string
     return (true, "Registration rejected and user notified.");
 }
 
-    public async Task<(bool Success, string Message, byte[]? FileBytes, string? ContentType, string? FileName)> GetNicDocumentAsync(string nic)
+    public async Task<string?> GetNicImageUrlAsync(string nic)
     {
-        string? documentId = null;
-
         var user = await _userRepository.GetByNICAsync(nic);
-        if (user != null && !string.IsNullOrEmpty(user.NicDocumentId))
+        if (user != null && !string.IsNullOrEmpty(user.NicImageUrl))
         {
-            documentId = user.NicDocumentId;
-        }
-        else
-        {
-            var pending = await _pendingRegistrationRepository.GetByNicOrEmailAsync(nic, nic);
-            if (pending != null && !string.IsNullOrEmpty(pending.NicDocumentId))
-            {
-                documentId = pending.NicDocumentId;
-            }
+            return user.NicImageUrl;
         }
 
-        if (string.IsNullOrEmpty(documentId))
+        var pending = await _pendingRegistrationRepository.GetByNicOrEmailAsync(nic, nic);
+        if (pending != null && !string.IsNullOrEmpty(pending.NicImageUrl))
         {
-            return (false, "NIC document not found for this user.", null, null, null);
+            return pending.NicImageUrl;
         }
 
-        try
-        {
-            var objectId = new MongoDB.Bson.ObjectId(documentId);
-            
-            var filter = MongoDB.Driver.Builders<MongoDB.Driver.GridFS.GridFSFileInfo>.Filter.Eq(x => x.Id, objectId);
-            var cursor = await _dbContext.GridFSBucket.FindAsync(filter);
-            var list = await MongoDB.Driver.IAsyncCursorExtensions.ToListAsync(cursor);
-            var fileInfo = list.FirstOrDefault();
-            
-            var fileBytes = await _dbContext.GridFSBucket.DownloadAsBytesAsync(objectId);
-            
-            string contentType = "application/octet-stream";
-            string fileName = fileInfo?.Filename ?? "nic_document";
-            
-            var ext = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
-            if (ext == ".jpg" || ext == ".jpeg") contentType = "image/jpeg";
-            else if (ext == ".png") contentType = "image/png";
-            else if (ext == ".pdf") contentType = "application/pdf";
-
-            return (true, "Success", fileBytes, contentType, fileName);
-        }
-        catch
-        {
-            return (false, "Failed to retrieve NIC document.", null, null, null);
-        }
+        return null;
     }
 
     public async Task<(bool Success, string Message, string? AiResponse)> ValidateNicWithAiAsync(string nic)
     {
-        var docResult = await GetNicDocumentAsync(nic);
-        if (!docResult.Success || docResult.FileBytes == null)
+        var imageUrl = await GetNicImageUrlAsync(nic);
+        if (string.IsNullOrEmpty(imageUrl))
         {
-            return (false, "Could not find NIC document to validate.", null);
+            return (false, "Could not find NIC document URL to validate.", null);
         }
 
         try
@@ -472,16 +418,10 @@ public async Task<(bool Success, string Message)> RejectRegistrationAsync(string
             using var client = new System.Net.Http.HttpClient();
             client.DefaultRequestHeaders.Add("apikey", "helloworld"); // Free test key
             
-            // Prepare the file for upload
-            var content = new System.Net.Http.MultipartFormDataContent();
-            var fileContent = new System.Net.Http.ByteArrayContent(docResult.FileBytes);
-            
-            // Set content type based on extension
-            string fileName = docResult.FileName ?? "document.jpg";
-            string mimeType = docResult.ContentType ?? "image/jpeg";
-            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
-            
-            content.Add(fileContent, "file", fileName);
+            var content = new System.Net.Http.FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("url", imageUrl)
+            });
 
             // Call OCR.space API
             var response = await client.PostAsync("https://api.ocr.space/parse/image", content);
@@ -560,7 +500,7 @@ public async Task<(bool Success, string Message)> ActivateUserAsync(string nic)
             AccountStatus = AccountStatus.ACTIVE,
             EmailVerified = true,
             PasswordHash = pending.PasswordHash,
-            NicDocumentId = pending.NicDocumentId,
+            NicImageUrl = pending.NicImageUrl,
             NicVerificationStatus = "VERIFIED",
             CreatedDate = pending.CreatedDate,
             UpdatedDate = DateTime.UtcNow

@@ -27,7 +27,7 @@ public class User
 
     public bool EmailVerified { get; set; }
 
-    public string NicDocumentId { get; set; } = string.Empty;
+    public string NicImageUrl { get; set; } = string.Empty;
 
     public string NicVerificationStatus { get; set; } = "PENDING_REVIEW";
 }

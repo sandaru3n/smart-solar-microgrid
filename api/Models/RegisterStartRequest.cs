@@ -23,5 +23,5 @@ public class RegisterStartRequest
     public string Password { get; set; } = string.Empty;
 
     [Required]
-    public IFormFile NicDocument { get; set; } = null!;
+    public string NicImageUrl { get; set; } = string.Empty;
 }

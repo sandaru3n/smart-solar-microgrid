@@ -141,39 +141,65 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     private fun submitRegistration(name: String, nic: String, email: String, pass: String, phone: String, address: String) {
-        val file = getFileFromUri(selectedFileUri!!)
-        if (file == null) {
-            Toast.makeText(this, "Failed to read document file", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (file.length() > 5 * 1024 * 1024) {
-            Toast.makeText(this, "File is too large. Max 5MB.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Prepare Multipart request
-        val requestFile = file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
-        val documentPart = MultipartBody.Part.createFormData("NicDocument", file.name, requestFile)
-        
-        val namePart = name.toRequestBody("text/plain".toMediaTypeOrNull())
-        val nicPart = nic.toRequestBody("text/plain".toMediaTypeOrNull())
-        val emailPart = email.toRequestBody("text/plain".toMediaTypeOrNull())
-        val passPart = pass.toRequestBody("text/plain".toMediaTypeOrNull())
-        val phonePart = phone.toRequestBody("text/plain".toMediaTypeOrNull())
-        val addressPart = address.toRequestBody("text/plain".toMediaTypeOrNull())
-
         val btnRegister = findViewById<Button>(R.id.btnRegister)
         btnRegister.isEnabled = false
-        btnRegister.text = "Uploading... Please wait"
-        Toast.makeText(this, "Uploading document and sending OTP...", Toast.LENGTH_SHORT).show()
+        btnRegister.text = "Uploading Document..."
+        Toast.makeText(this, "Uploading NIC to Cloudinary...", Toast.LENGTH_SHORT).show()
 
+        try {
+            com.cloudinary.android.MediaManager.init(this, mapOf(
+                "cloud_name" to com.ead.solargrid.BuildConfig.CLOUDINARY_CLOUD_NAME,
+                "api_key" to com.ead.solargrid.BuildConfig.CLOUDINARY_API_KEY,
+                "api_secret" to com.ead.solargrid.BuildConfig.CLOUDINARY_API_SECRET
+            ))
+        } catch (e: Exception) {
+            // Already initialized
+        }
+
+        com.cloudinary.android.MediaManager.get().upload(selectedFileUri!!)
+            .callback(object : com.cloudinary.android.callback.UploadCallback {
+                override fun onStart(requestId: String) {}
+
+                override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
+
+                override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                    val secureUrl = resultData["secure_url"] as String
+                    runOnUiThread {
+                        btnRegister.text = "Sending OTP..."
+                        Toast.makeText(this@RegisterActivity, "Upload complete. Registering...", Toast.LENGTH_SHORT).show()
+                    }
+                    sendRegistrationToBackend(name, nic, email, pass, phone, address, secureUrl)
+                }
+
+                override fun onError(requestId: String, error: com.cloudinary.android.callback.ErrorInfo) {
+                    runOnUiThread {
+                        btnRegister.isEnabled = true
+                        btnRegister.text = "Submit Registration"
+                        Toast.makeText(this@RegisterActivity, "Upload failed: ${error.description}", Toast.LENGTH_LONG).show()
+                    }
+                }
+
+                override fun onReschedule(requestId: String, error: com.cloudinary.android.callback.ErrorInfo) {}
+            }).dispatch()
+    }
+
+    private fun sendRegistrationToBackend(name: String, nic: String, email: String, pass: String, phone: String, address: String, nicUrl: String) {
         lifecycleScope.launch {
             try {
                 val api = ApiClient.getApiService(this@RegisterActivity)
-                val response = api.registerStart(
-                    nicPart, namePart, emailPart, passPart, phonePart, addressPart, documentPart
+                val request = com.ead.solargrid.models.RegisterStartRequest(
+                    nic = nic,
+                    name = name,
+                    email = email,
+                    password = pass,
+                    phone = phone,
+                    address = address,
+                    nicImageUrl = nicUrl
                 )
+                
+                val response = api.registerStart(request)
+                
+                val btnRegister = findViewById<Button>(R.id.btnRegister)
                 
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
@@ -199,25 +225,11 @@ class RegisterActivity : AppCompatActivity() {
                     Toast.makeText(this@RegisterActivity, errorMessage, Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
+                val btnRegister = findViewById<Button>(R.id.btnRegister)
                 btnRegister.isEnabled = true
                 btnRegister.text = "Submit Registration"
                 Toast.makeText(this@RegisterActivity, "Network Error. Please try again.", Toast.LENGTH_SHORT).show()
             }
-        }
-    }
-
-    private fun getFileFromUri(uri: Uri): File? {
-        return try {
-            val inputStream = contentResolver.openInputStream(uri)
-            val fileName = getFileName(uri)
-            val tempFile = File(cacheDir, fileName)
-            val outputStream = FileOutputStream(tempFile)
-            inputStream?.copyTo(outputStream)
-            inputStream?.close()
-            outputStream.close()
-            tempFile
-        } catch (e: Exception) {
-            null
         }
     }
 }

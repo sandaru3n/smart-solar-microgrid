@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One reservation on the operator lists. Pending rows show Approve / Reject. Bound in OperatorReservationAdapter. -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/OperatorCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Read as one item by TalkBack; description set in code. -->
+        <LinearLayout
+            android:id="@+id/details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="true"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:id="@+id/iconBadge"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_operator_icon_badge"
+                    android:importantForAccessibility="no">
+
+                    <ImageView
+                        android:id="@+id/ivIcon"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        tools:src="@drawable/ic_op_station" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvStation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textColor="@color/op_text"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        tools:text="Colombo Solar Hub" />
+
+                    <TextView
+                        android:id="@+id/tvSlot"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textColor="@color/op_text_secondary"
+                        android:textSize="13sp"
+                        tools:text="Thu, Oct 2 · 10:00 AM – 11:00 AM" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvStatus"
+                    style="@style/OperatorPill"
+                    android:layout_marginStart="8dp"
+                    tools:backgroundTint="@color/op_amber_bg"
+                    tools:text="Pending"
+                    tools:textColor="@color/op_amber_fg" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="14dp"
+                android:background="@color/op_border" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvProsumer"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawablePadding="6dp"
+                    android:ellipsize="end"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:textColor="@color/op_text"
+                    android:textSize="13sp"
+                    app:drawableStartCompat="@drawable/ic_op_person"
+                    app:drawableTint="@color/op_text_secondary"
+                    tools:text="NIC 200012345678" />
+
+                <TextView
+                    android:id="@+id/tvReference"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:drawablePadding="4dp"
+                    android:fontFamily="monospace"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:textColor="@color/op_text_secondary"
+                    android:textSize="12sp"
+                    app:drawableStartCompat="@drawable/ic_op_tag"
+                    app:drawableTint="@color/op_text_secondary"
+                    tools:text="#D4E5F6" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textColor="@color/op_text_secondary"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:text="Slot has started, so it can only be rejected."
+                tools:visibility="visible" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReject"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="@string/op_res_reject"
+                android:textAllCaps="false"
+                android:textColor="@color/op_reject_text"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:cornerRadius="12dp"
+                app:icon="@drawable/ic_op_close"
+                app:iconGravity="textStart"
+                app:iconSize="18dp"
+                app:iconTint="@color/op_reject_text"
+                app:rippleColor="@color/op_red_border"
+                app:strokeColor="@color/op_red_border" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnApprove"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="@string/op_res_approve"
+                android:textAllCaps="false"
+                android:textColor="@color/op_approve_text"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/op_approve_bg"
+                app:cornerRadius="12dp"
+                app:icon="@drawable/ic_op_check"
+                app:iconGravity="textStart"
+                app:iconSize="18dp"
+                app:iconTint="@color/op_approve_text" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

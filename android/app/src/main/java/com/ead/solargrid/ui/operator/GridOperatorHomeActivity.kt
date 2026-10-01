@@ -1,19 +1,14 @@
 package com.ead.solargrid.ui.operator
 
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.text.format.DateUtils
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -30,32 +25,26 @@ import com.ead.solargrid.databinding.ActivityGridOperatorHomeBinding
 import com.ead.solargrid.databinding.ItemOperatorActionBinding
 import com.ead.solargrid.databinding.ItemOperatorStatBinding
 import com.ead.solargrid.ui.auth.LoginActivity
+import com.ead.solargrid.ui.operator.reservations.OperatorReservationsActivity
 import com.ead.solargrid.ui.operator.scan.ScanQrActivity
+import com.ead.solargrid.ui.operator.stations.OperatorStationsActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import java.text.NumberFormat
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.Calendar
 
 class GridOperatorHomeActivity : AppCompatActivity() {
-
-    private enum class Tone(@ColorRes val background: Int, @ColorRes val foreground: Int) {
-        AMBER(R.color.op_amber_bg, R.color.op_amber_fg),
-        GREEN(R.color.op_green_bg, R.color.op_green_fg),
-        BLUE(R.color.op_blue_bg, R.color.op_blue_fg),
-        YELLOW(R.color.op_yellow_bg, R.color.op_yellow_fg),
-        ORANGE(R.color.op_orange_bg, R.color.op_orange_fg),
-        NEUTRAL(R.color.op_neutral_bg, R.color.op_neutral_fg)
-    }
 
     private lateinit var binding: ActivityGridOperatorHomeBinding
     private lateinit var viewModel: GridOperatorHomeViewModel
     private lateinit var sessionManager: SessionManager
 
-    /** Completing transfers changes today's numbers, so refresh on the way back. */
-    private val scanQr = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+    /** Completing, approving or rejecting changes the numbers, so refresh on the way back. */
+    private val openAndRefresh = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (::viewModel.isInitialized) viewModel.refresh()
     }
 
@@ -83,6 +72,7 @@ class GridOperatorHomeActivity : AppCompatActivity() {
         binding.btnRefresh.setOnClickListener { viewModel.refresh() }
         binding.btnRetry.setOnClickListener { viewModel.refresh() }
         binding.btnLogout.setOnClickListener { confirmLogout() }
+        binding.btnHeaderScan.setOnClickListener { openScanner() }
 
         viewModel.state.observe(this, ::render)
 
@@ -138,10 +128,20 @@ class GridOperatorHomeActivity : AppCompatActivity() {
     }
 
     private fun setUpCards() {
-        binding.cardPending.setUp(R.drawable.ic_op_schedule, R.string.operator_stat_pending, Tone.AMBER, R.string.operator_stat_pending_hint)
-        binding.cardUpcoming.setUp(R.drawable.ic_op_event_available, R.string.operator_stat_upcoming, Tone.GREEN, R.string.operator_stat_upcoming_hint)
-        binding.cardToday.setUp(R.drawable.ic_op_today, R.string.operator_stat_today, Tone.BLUE, R.string.operator_stat_today_hint)
-        binding.cardCompleted.setUp(R.drawable.ic_op_check_circle, R.string.operator_stat_completed, Tone.ORANGE, R.string.operator_stat_completed_hint)
+        binding.cardPending.setUp(R.drawable.ic_op_schedule, R.string.operator_stat_pending, OperatorTone.AMBER, R.string.operator_stat_pending_hint) {
+            openReservations(OperatorReservationsActivity.pendingIntent(this))
+        }
+        binding.cardUpcoming.setUp(R.drawable.ic_op_event_available, R.string.operator_stat_upcoming, OperatorTone.GREEN, R.string.operator_stat_upcoming_hint) {
+            openReservations(OperatorReservationsActivity.allIntent(this, status = OperatorReservationStatus.APPROVED))
+        }
+        binding.cardToday.setUp(R.drawable.ic_op_today, R.string.operator_stat_today, OperatorTone.BLUE, R.string.operator_stat_today_hint) {
+            openReservations(OperatorReservationsActivity.allIntent(this, dateUtc = todayUtc()))
+        }
+        binding.cardCompleted.setUp(R.drawable.ic_op_check_circle, R.string.operator_stat_completed, OperatorTone.ORANGE, R.string.operator_stat_completed_hint) {
+            openReservations(
+                OperatorReservationsActivity.allIntent(this, status = OperatorReservationStatus.COMPLETED, dateUtc = todayUtc())
+            )
+        }
 
         // Infrastructure cards are three across, so they use a smaller number.
         listOf(
@@ -149,51 +149,65 @@ class GridOperatorHomeActivity : AppCompatActivity() {
             Triple(binding.cardOutput, R.drawable.ic_op_sun, R.string.operator_stat_output),
             Triple(binding.cardBattery, R.drawable.ic_op_battery, R.string.operator_stat_battery)
         ).forEach { (card, icon, label) ->
-            card.setUp(icon, label, Tone.NEUTRAL)
+            card.setUp(icon, label, OperatorTone.NEUTRAL)
             card.tvValue.textSize = 20f
+        }
+        // Output and battery are station totals, so all three open the station list.
+        listOf(binding.cardStations, binding.cardOutput, binding.cardBattery).forEach { card ->
+            card.makeClickable { openStations() }
         }
     }
 
-    // TODO: Point the rest at the real screens as they are built (pending list, reservations, stations).
     private fun setUpActions() {
-        binding.actionScan.setUp(R.drawable.ic_op_qr, R.string.operator_action_scan, Tone.YELLOW) {
-            scanQr.launch(Intent(this, ScanQrActivity::class.java))
+        binding.actionScan.setUp(R.drawable.ic_op_qr, R.string.operator_action_scan, OperatorTone.YELLOW) {
+            openScanner()
         }
-        binding.actionPending.setUp(R.drawable.ic_op_schedule, R.string.operator_action_pending, Tone.AMBER)
-        binding.actionReservations.setUp(R.drawable.ic_op_list, R.string.operator_action_reservations, Tone.BLUE)
-        binding.actionStations.setUp(R.drawable.ic_op_station, R.string.operator_action_stations, Tone.NEUTRAL)
+        binding.actionPending.setUp(R.drawable.ic_op_schedule, R.string.operator_action_pending, OperatorTone.AMBER) {
+            openReservations(OperatorReservationsActivity.pendingIntent(this))
+        }
+        binding.actionReservations.setUp(R.drawable.ic_op_list, R.string.operator_action_reservations, OperatorTone.BLUE) {
+            openReservations(OperatorReservationsActivity.allIntent(this))
+        }
+        binding.actionStations.setUp(R.drawable.ic_op_station, R.string.operator_action_stations, OperatorTone.NEUTRAL) {
+            openStations()
+        }
     }
 
     private fun ItemOperatorStatBinding.setUp(
         @DrawableRes icon: Int,
         @StringRes label: Int,
-        tone: Tone,
-        @StringRes hint: Int? = null
+        tone: OperatorTone,
+        @StringRes hint: Int? = null,
+        onClick: (() -> Unit)? = null
     ) {
-        applyTone(iconBadge, ivIcon, icon, tone)
+        OperatorScreen.applyTone(iconBadge, ivIcon, icon, tone)
         tvLabel.setText(label)
         if (hint != null) {
             tvHint.setText(hint)
             tvHint.isVisible = true
         }
+        if (onClick != null) makeClickable(onClick)
+    }
+
+    private fun ItemOperatorStatBinding.makeClickable(onClick: () -> Unit) {
+        root.isClickable = true
+        root.isFocusable = true
+        root.setOnClickListener { onClick() }
     }
 
     private fun ItemOperatorActionBinding.setUp(
         @DrawableRes icon: Int,
         @StringRes label: Int,
-        tone: Tone,
-        onClick: (() -> Unit)? = null
+        tone: OperatorTone,
+        onClick: () -> Unit
     ) {
-        applyTone(iconBadge, ivIcon, icon, tone)
+        OperatorScreen.applyTone(iconBadge, ivIcon, icon, tone)
         tvLabel.setText(label)
-        root.setOnClickListener { onClick?.invoke() ?: showComingSoon(getString(label)) }
+        root.setOnClickListener { onClick() }
     }
 
-    private fun applyTone(badge: View, iconView: ImageView, @DrawableRes icon: Int, tone: Tone) {
-        badge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, tone.background))
-        iconView.setImageResource(icon)
-        iconView.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(this, tone.foreground))
-    }
+    /** The UTC day the API's dateUtc filter uses, matching the "today" cards. */
+    private fun todayUtc(): String = LocalDate.now(ZoneOffset.UTC).toString()
 
     // ----- Rendering -----
 
@@ -265,9 +279,11 @@ class GridOperatorHomeActivity : AppCompatActivity() {
 
     // ----- Actions -----
 
-    private fun showComingSoon(feature: String) {
-        Snackbar.make(binding.root, getString(R.string.operator_coming_soon, feature), Snackbar.LENGTH_SHORT).show()
-    }
+    private fun openScanner() = openAndRefresh.launch(Intent(this, ScanQrActivity::class.java))
+
+    private fun openReservations(intent: Intent) = openAndRefresh.launch(intent)
+
+    private fun openStations() = startActivity(OperatorStationsActivity.newIntent(this))
 
     private fun confirmLogout() {
         MaterialAlertDialogBuilder(this)

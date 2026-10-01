@@ -374,12 +374,12 @@ public async Task<IActionResult> RejectRegistration(string nic, [FromBody] Rejec
     [HttpGet("{nic}/nic-document")]
     public async Task<IActionResult> GetNicDocument(string nic)
     {
-        var result = await _userService.GetNicDocumentAsync(nic);
-        if (!result.Success || result.FileBytes == null || result.ContentType == null)
+        var url = await _userService.GetNicImageUrlAsync(nic);
+        if (string.IsNullOrEmpty(url))
         {
-            return NotFound(new { message = result.Message });
+            return NotFound(new { message = "NIC image URL not found for this user." });
         }
-        return File(result.FileBytes, result.ContentType, result.FileName ?? "document");
+        return Redirect(url);
     }
 
     [Authorize(Roles = "BACKOFFICE")]
