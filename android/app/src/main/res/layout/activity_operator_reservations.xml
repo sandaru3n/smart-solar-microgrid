@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Grid Operator: pending approvals and all reservations. Mode and states are switched in OperatorReservationsActivity. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/op_background"
+    android:orientation="vertical"
+    tools:context=".ui.operator.reservations.OperatorReservationsActivity">
+
+    <!-- Top padding is extended by the status bar inset in code. -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:minHeight="64dp"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_qr_back"
+            app:tint="@color/op_text" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvTitle"
+                style="@style/OperatorTopBarTitle"
+                tools:text="Pending approvals" />
+
+            <TextView
+                android:id="@+id/tvSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/op_text_secondary"
+                android:textSize="13sp"
+                tools:text="12 awaiting review" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnRefresh"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/operator_refresh"
+            android:src="@drawable/ic_op_refresh"
+            android:tooltipText="@string/operator_refresh"
+            app:tint="@color/op_text" />
+    </LinearLayout>
+
+    <!-- Filters: only in "All reservations" mode. -->
+    <LinearLayout
+        android:id="@+id/filters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="4dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/searchLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            app:boxBackgroundColor="@color/op_surface"
+            app:boxCornerRadiusBottomEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp"
+            app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusTopStart="14dp"
+            app:boxStrokeColor="@color/op_primary"
+            app:endIconMode="clear_text"
+            app:hintEnabled="false"
+            app:startIconDrawable="@drawable/ic_op_search"
+            app:startIconTint="@color/op_text_secondary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/op_res_search_hint"
+                android:imeOptions="actionSearch"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:maxLength="100"
+                android:maxLines="1"
+                android:textColor="@color/op_text"
+                android:textColorHint="@color/op_text_secondary"
+                android:textSize="15sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:clipToPadding="false"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/statusChips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:chipSpacingHorizontal="8dp"
+                app:selectionRequired="true"
+                app:singleLine="true"
+                app:singleSelection="true" />
+        </HorizontalScrollView>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipDate"
+                    style="@style/OperatorFilterChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="false"
+                    app:chipIcon="@drawable/ic_op_today"
+                    app:chipIconSize="18dp"
+                    app:chipIconTint="@color/op_text_secondary"
+                    app:closeIcon="@drawable/ic_op_close"
+                    app:closeIconSize="16dp"
+                    app:closeIconTint="@color/op_text_secondary"
+                    tools:text="Any slot date" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipStation"
+                    style="@style/OperatorFilterChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:checkable="false"
+                    android:visibility="gone"
+                    app:chipIcon="@drawable/ic_op_station"
+                    app:chipIconSize="18dp"
+                    app:chipIconTint="@color/op_text_secondary"
+                    app:closeIcon="@drawable/ic_op_close"
+                    app:closeIconEnabled="true"
+                    app:closeIconSize="16dp"
+                    app:closeIconTint="@color/op_text_secondary"
+                    tools:text="Colombo Solar Hub"
+                    tools:visibility="visible" />
+            </LinearLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- Bottom padding is extended by the navigation bar inset in code. -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="24dp"
+                android:scrollbarStyle="outsideOverlay"
+                android:scrollbars="vertical"
+                tools:listitem="@layout/item_operator_reservation" />
+
+            <include
+                android:id="@+id/emptyState"
+                layout="@layout/partial_operator_empty_state"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</LinearLayout>

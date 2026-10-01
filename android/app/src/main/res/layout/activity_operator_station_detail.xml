@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Grid Operator: one station's details, weekly schedule and booked slots. Filled in OperatorStationDetailActivity. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/op_background"
+    android:orientation="vertical"
+    tools:context=".ui.operator.stations.OperatorStationDetailActivity">
+
+    <!-- Top padding is extended by the status bar inset in code. -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:minHeight="64dp"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_qr_back"
+            app:tint="@color/op_text" />
+
+        <TextView
+            android:id="@+id/tvTitle"
+            style="@style/OperatorTopBarTitle"
+            android:layout_width="0dp"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            tools:text="Colombo Solar Hub" />
+
+        <ImageButton
+            android:id="@+id/btnRefresh"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/operator_refresh"
+            android:src="@drawable/ic_op_refresh"
+            android:tooltipText="@string/operator_refresh"
+            app:tint="@color/op_text" />
+    </LinearLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- Bottom padding is extended by the navigation bar inset in code. -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="16dp">
+
+                <!-- Error banner: same look as the operator home. Last good data stays visible. -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/errorCard"
+                    style="@style/OperatorCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/op_red_bg"
+                    app:strokeColor="@color/op_red_border"
+                    tools:visibility="visible">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="4dp"
+                        android:paddingBottom="6dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_op_error"
+                            app:tint="@color/op_red_fg" />
+
+                        <TextView
+                            android:id="@+id/tvError"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:accessibilityLiveRegion="polite"
+                            android:textColor="@color/op_red_fg"
+                            android:textSize="13sp"
+                            tools:text="Can't reach the server. Check your connection and try again." />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRetry"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/operator_retry"
+                            android:textColor="@color/op_red_fg" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Summary -->
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/OperatorCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <FrameLayout
+                                android:id="@+id/iconBadge"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:background="@drawable/bg_operator_icon_badge"
+                                android:importantForAccessibility="no">
+
+                                <ImageView
+                                    android:id="@+id/ivIcon"
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:layout_gravity="center"
+                                    android:importantForAccessibility="no"
+                                    tools:src="@drawable/ic_op_station" />
+                            </FrameLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvName"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/op_text"
+                                    android:textSize="18sp"
+                                    android:textStyle="bold"
+                                    tools:text="Colombo Solar Hub" />
+
+                                <TextView
+                                    android:id="@+id/tvAddress"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:textColor="@color/op_text_secondary"
+                                    android:textIsSelectable="true"
+                                    android:textSize="14sp"
+                                    tools:text="12 Galle Road, Colombo 03" />
+
+                                <TextView
+                                    android:id="@+id/tvActive"
+                                    style="@style/OperatorPill"
+                                    android:layout_marginTop="8dp"
+                                    tools:text="Active" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnDirections"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_weight="1"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:text="@string/op_station_directions"
+                                android:textAllCaps="false"
+                                android:textColor="@color/op_text"
+                                app:cornerRadius="12dp"
+                                app:icon="@drawable/ic_op_directions"
+                                app:iconGravity="textStart"
+                                app:iconSize="18dp"
+                                app:iconTint="@color/op_text"
+                                app:strokeColor="@color/op_border" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnReservations"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_marginStart="12dp"
+                                android:layout_weight="1"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:text="@string/op_station_reservations"
+                                android:textAllCaps="false"
+                                app:cornerRadius="12dp"
+                                app:icon="@drawable/ic_op_list"
+                                app:iconGravity="textStart"
+                                app:iconSize="18dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <include
+                        android:id="@+id/cardCapacity"
+                        layout="@layout/item_operator_stat"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="5dp"
+                        android:layout_weight="1" />
+
+                    <include
+                        android:id="@+id/cardBattery"
+                        layout="@layout/item_operator_stat"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:layout_marginEnd="5dp"
+                        android:layout_weight="1" />
+
+                    <include
+                        android:id="@+id/cardPending"
+                        layout="@layout/item_operator_stat"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/OperatorSectionLabel"
+                    android:text="@string/op_station_section_schedule" />
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/OperatorCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:id="@+id/scheduleRows"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="6dp" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    style="@style/OperatorSectionLabel"
+                    android:text="@string/op_station_section_slots" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="-16dp"
+                    android:layout_marginEnd="-16dp"
+                    android:clipToPadding="false"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:scrollbars="none">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/dayChips"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:chipSpacingHorizontal="8dp"
+                        app:selectionRequired="true"
+                        app:singleLine="true"
+                        app:singleSelection="true" />
+                </HorizontalScrollView>
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/OperatorCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="88dp"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/slotsProgress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:indeterminate="true"
+                            android:visibility="invisible"
+                            app:indicatorColor="@color/op_primary"
+                            app:trackColor="@android:color/transparent" />
+
+                        <TextView
+                            android:id="@+id/tvSlotsMessage"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:paddingStart="16dp"
+                            android:paddingTop="20dp"
+                            android:paddingEnd="16dp"
+                            android:paddingBottom="24dp"
+                            android:textColor="@color/op_text_secondary"
+                            android:textSize="14sp"
+                            android:visibility="gone"
+                            tools:text="No bookings on this day yet."
+                            tools:visibility="visible" />
+
+                        <LinearLayout
+                            android:id="@+id/slotRows"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingBottom="8dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/op_station_slots_note"
+                    android:textColor="@color/op_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</LinearLayout>

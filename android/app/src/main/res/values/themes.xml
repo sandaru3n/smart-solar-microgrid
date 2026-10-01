@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <style name="Theme.SolarGrid" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/solar_yellow</item>
@@ -58,5 +58,43 @@
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:accessibilityHeading">true</item>
+    </style>
+
+    <!-- Filter chips on the operator list screens: dark when selected, outlined otherwise. -->
+    <style name="OperatorFilterChip" parent="Widget.MaterialComponents.Chip.Choice">
+        <item name="chipBackgroundColor">@color/op_chip_bg</item>
+        <item name="chipStrokeColor">@color/op_chip_stroke</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="android:textColor">@color/op_chip_text</item>
+        <item name="android:textSize">13sp</item>
+        <item name="chipMinHeight">36dp</item>
+        <item name="ensureMinTouchTargetSize">true</item>
+        <item name="rippleColor">@color/op_header_chip</item>
+    </style>
+
+    <!-- Small pill for statuses and specs (tinted in code via OperatorScreen.applyChip). -->
+    <style name="OperatorPill">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_operator_role_chip</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingBottom">3dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <style name="OperatorTopBarTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <!-- Ignored below API 28, where TalkBack has no heading navigation anyway. -->
+        <item name="android:accessibilityHeading" tools:targetApi="p">true</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/op_text</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
     </style>
 </resources>
