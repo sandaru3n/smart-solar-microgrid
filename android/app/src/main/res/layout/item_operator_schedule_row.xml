@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One day of a station's weekly schedule. Bound in OperatorStationDetailActivity. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:minHeight="44dp"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/tvDay"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/op_text"
+        android:textSize="14sp"
+        tools:text="Monday" />
+
+    <TextView
+        android:id="@+id/tvToday"
+        style="@style/OperatorPill"
+        android:layout_marginEnd="8dp"
+        android:text="@string/op_station_today"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/tvHours"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/op_text"
+        android:textSize="14sp"
+        tools:text="8:00 AM – 6:00 PM" />
+</LinearLayout>

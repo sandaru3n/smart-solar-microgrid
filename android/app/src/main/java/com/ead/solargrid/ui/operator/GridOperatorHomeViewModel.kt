@@ -9,12 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.ead.solargrid.api.ApiClient
 import com.ead.solargrid.models.ReservationSummaryResponse
 import com.ead.solargrid.models.SolarStation
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import retrofit2.Response
 import java.time.LocalDate
 import java.time.ZoneOffset
 
@@ -42,11 +39,6 @@ data class OperatorHomeState(
 
 class GridOperatorHomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private sealed interface ApiResult<out T> {
-        data class Success<T>(val data: T) : ApiResult<T>
-        data class Failure(val code: Int?, val message: String) : ApiResult<Nothing>
-    }
-
     private val api = ApiClient.getApiService(application)
 
     private val _state = MutableLiveData(OperatorHomeState())
@@ -71,12 +63,12 @@ class GridOperatorHomeViewModel(application: Application) : AndroidViewModel(app
             // "Today" is the UTC day of the slot start, which is what the API filters on (same as the web dashboard).
             val todayUtc = LocalDate.now(ZoneOffset.UTC).toString()
 
-            val summaryCall = async { call { api.getReservationSummary() } }
-            val todayCall = async { call { api.getReservations(dateUtc = todayUtc, page = 1, pageSize = 1) } }
+            val summaryCall = async { OperatorApi.call { api.getReservationSummary() } }
+            val todayCall = async { OperatorApi.call { api.getReservations(dateUtc = todayUtc, page = 1, pageSize = 1) } }
             val completedCall = async {
-                call { api.getReservations(status = STATUS_COMPLETED, dateUtc = todayUtc, page = 1, pageSize = 1) }
+                OperatorApi.call { api.getReservations(status = STATUS_COMPLETED, dateUtc = todayUtc, page = 1, pageSize = 1) }
             }
-            val stationsCall = async { call { api.getStations() } }
+            val stationsCall = async { OperatorApi.call { api.getStations() } }
 
             val summary = summaryCall.await()
             val today = todayCall.await()
@@ -97,7 +89,7 @@ class GridOperatorHomeViewModel(application: Application) : AndroidViewModel(app
                 completedToday = completed.dataOr(null)?.totalCount ?: previous.completedToday,
                 infrastructure = stations.dataOr(null)?.let(::totals) ?: previous.infrastructure,
                 errorMessage = failures.firstOrNull()?.message,
-                sessionExpired = failures.any { it.code == HTTP_UNAUTHORIZED },
+                sessionExpired = failures.any { it.isSessionExpired },
                 updatedAtMillis = if (failures.isEmpty()) System.currentTimeMillis() else previous.updatedAtMillis
             )
         }
@@ -111,43 +103,8 @@ class GridOperatorHomeViewModel(application: Application) : AndroidViewModel(app
         batterySlots = stations.sumOf { it.batteryStorageSlots }
     )
 
-    private fun <T> ApiResult<T>.dataOr(fallback: T?): T? =
-        if (this is ApiResult.Success) data else fallback
-
-    private suspend fun <T> call(request: suspend () -> Response<T>): ApiResult<T> {
-        return try {
-            val response = request()
-            val body = response.body()
-            if (response.isSuccessful && body != null) {
-                ApiResult.Success(body)
-            } else {
-                ApiResult.Failure(response.code(), errorMessage(response))
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            ApiResult.Failure(null, "Can't reach the server. Check your connection and try again.")
-        }
-    }
-
-    private fun errorMessage(response: Response<*>): String {
-        val fromServer = try {
-            response.errorBody()?.string()?.let { JSONObject(it).optString("message") }
-        } catch (e: Exception) {
-            null
-        }
-        return when {
-            !fromServer.isNullOrBlank() -> fromServer
-            response.code() == HTTP_UNAUTHORIZED -> "Your session has expired. Please log in again."
-            response.code() == HTTP_FORBIDDEN -> "You don't have permission to view this information."
-            else -> "Something went wrong (${response.code()}). Please try again."
-        }
-    }
-
     companion object {
         private const val STALE_AFTER_MS = 30_000L
         private const val STATUS_COMPLETED = "Completed"
-        private const val HTTP_UNAUTHORIZED = 401
-        private const val HTTP_FORBIDDEN = 403
     }
 }

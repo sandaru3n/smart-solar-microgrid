@@ -202,7 +202,6 @@
     <string name="operator_cancel">Cancel</string>
     <string name="operator_retry">Retry</string>
     <string name="operator_session_expired">Your session has expired. Please log in again.</string>
-    <string name="operator_coming_soon">%1$s is coming soon</string>
     <string name="operator_value_placeholder">—</string>
     <string name="operator_value_kw">%1$s kW</string>
     <string name="operator_card_description">%1$s: %2$s</string>
@@ -225,6 +224,7 @@
     <string name="operator_stat_battery">Battery slots</string>
 
     <string name="operator_action_scan">Scan QR</string>
+    <string name="operator_header_scan">Scan</string>
     <string name="operator_action_pending">Pending approvals</string>
     <string name="operator_action_reservations">All reservations</string>
     <string name="operator_action_stations">Stations</string>
@@ -297,5 +297,79 @@
     <plurals name="upcoming_count">
         <item quantity="one">%d booking</item>
         <item quantity="other">%d bookings</item>
+    </plurals>
+
+    <!-- Grid Operator: pending approvals and all reservations -->
+    <string name="op_res_search_hint">Search station or booking ID</string>
+    <string name="op_res_filter_all">All</string>
+    <string name="op_res_pick_date">Slot date (UTC)</string>
+    <string name="op_res_date_any">Any slot date</string>
+    <string name="op_res_date_value">Slot date: %1$s</string>
+    <string name="op_res_unknown_station">Unknown station</string>
+    <string name="op_res_slot_started">The slot has already started, so this booking can only be rejected.</string>
+    <string name="op_res_booked_at">Booked %1$s</string>
+    <string name="op_res_approve">Approve</string>
+    <string name="op_res_reject">Reject</string>
+    <string name="op_res_working">Saving…</string>
+    <string name="op_res_item_description">%1$s, %2$s. Status %3$s. Prosumer NIC %4$s. Reference %5$s.</string>
+    <string name="op_res_approve_description">Approve booking at %1$s</string>
+    <string name="op_res_reject_description">Reject booking at %1$s</string>
+    <string name="op_res_reject_title">Reject this booking?</string>
+    <string name="op_res_reject_message">%1$s\n%2$s\nNIC %3$s\n\nThe slot is released for other prosumers. This can\'t be undone.</string>
+    <string name="op_res_keep_pending">Keep pending</string>
+    <string name="op_res_error_title">Couldn\'t load reservations</string>
+    <string name="op_res_pending_empty_title">All caught up</string>
+    <string name="op_res_pending_empty_message">No bookings are waiting for approval. New requests will show up here.</string>
+    <string name="op_res_filtered_empty_title">No matching reservations</string>
+    <string name="op_res_filtered_empty_message">Try another status, date or search.</string>
+    <string name="op_res_clear_filters">Clear filters</string>
+    <string name="op_res_empty_title">No reservations yet</string>
+    <string name="op_res_empty_message">Bookings made by prosumers will appear here.</string>
+    <string name="op_list_load_more_failed">Couldn\'t load more. Tap to retry</string>
+    <plurals name="op_res_pending_count">
+        <item quantity="one">%d awaiting review</item>
+        <item quantity="other">%d awaiting review</item>
+    </plurals>
+    <plurals name="op_res_count">
+        <item quantity="one">%d reservation</item>
+        <item quantity="other">%d reservations</item>
+    </plurals>
+
+    <!-- Grid Operator: stations -->
+    <string name="op_station_search_hint">Search by name or address</string>
+    <string name="op_station_item_description">%1$s, %2$s. %3$s, %4$s. Opens station details.</string>
+    <string name="op_station_subtitle">%1$s · %2$s</string>
+    <string name="op_station_error_title">Couldn\'t load stations</string>
+    <string name="op_station_search_empty_title">No stations found</string>
+    <string name="op_station_search_empty_message">Nothing matches \"%1$s\".</string>
+    <string name="op_station_clear_search">Clear search</string>
+    <string name="op_station_empty_title">No active stations</string>
+    <string name="op_station_empty_message">Stations added by Backoffice will appear here.</string>
+    <string name="op_station_directions">Directions</string>
+    <string name="op_station_reservations">Reservations</string>
+    <string name="op_station_stat_pending">Pending</string>
+    <string name="op_station_section_schedule">Weekly schedule</string>
+    <string name="op_station_section_slots">Booked slots</string>
+    <string name="op_station_slots_note">A slot appears here once a prosumer books it. Times are Sri Lanka time.</string>
+    <string name="op_station_today">Today</string>
+    <string name="op_station_tomorrow">Tomorrow</string>
+    <string name="op_station_active">Active</string>
+    <string name="op_station_inactive">Inactive</string>
+    <string name="op_station_hours_not_set">Not set</string>
+    <string name="op_station_closed">Closed</string>
+    <string name="op_station_hours">%1$s – %2$s</string>
+    <string name="op_station_slots_empty">No bookings on this day yet.</string>
+    <string name="op_station_slot_ended">Ended</string>
+    <string name="op_station_slot_full">Full</string>
+    <string name="op_station_slot_left">%1$d left</string>
+    <string name="op_station_slot_booked">%1$d of %2$d booked</string>
+    <string name="op_station_no_maps">No maps app is installed.</string>
+    <plurals name="op_station_battery_slots">
+        <item quantity="one">%d battery slot</item>
+        <item quantity="other">%d battery slots</item>
+    </plurals>
+    <plurals name="op_station_count">
+        <item quantity="one">%d active station</item>
+        <item quantity="other">%d active stations</item>
     </plurals>
 </resources>

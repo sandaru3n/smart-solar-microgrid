@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Last row of a paged operator list: a spinner while the next page loads, or a retry button. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="64dp">
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:indeterminate="true"
+        app:indicatorColor="@color/op_primary"
+        app:indicatorSize="28dp"
+        app:trackColor="@color/op_amber_bg" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRetry"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:text="@string/op_list_load_more_failed"
+        android:textAllCaps="false"
+        android:textColor="@color/op_primary_dark"
+        android:visibility="gone" />
+</FrameLayout>

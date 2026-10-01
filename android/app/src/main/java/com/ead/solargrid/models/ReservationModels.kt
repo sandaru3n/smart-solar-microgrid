@@ -29,7 +29,10 @@ data class ReservationItem(
     val slotId: String,
     val status: String,
     val slotStartTimeUtc: String?,
-    val slotEndTimeUtc: String?
+    val slotEndTimeUtc: String?,
+    val createdAtUtc: String? = null,
+    /** Sent back on approve / reject so a stale list gets a 409 instead of overwriting a newer change. */
+    val version: Long? = null
 )
 
 data class SolarStation(

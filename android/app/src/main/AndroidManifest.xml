@@ -54,6 +54,9 @@
         <activity android:name=".ui.home.qr.ReservationQrActivity" android:exported="false" android:theme="@style/Theme.SolarGrid" />
         <activity android:name=".ui.operator.scan.ScanQrActivity" android:exported="false" android:theme="@style/Theme.SolarGrid.Operator" />
         <activity android:name=".ui.operator.scan.ConfirmTransactionActivity" android:exported="false" android:theme="@style/Theme.SolarGrid.Operator" />
+        <activity android:name=".ui.operator.reservations.OperatorReservationsActivity" android:exported="false" android:theme="@style/Theme.SolarGrid.Operator" />
+        <activity android:name=".ui.operator.stations.OperatorStationsActivity" android:exported="false" android:theme="@style/Theme.SolarGrid.Operator" />
+        <activity android:name=".ui.operator.stations.OperatorStationDetailActivity" android:exported="false" android:theme="@style/Theme.SolarGrid.Operator" />
     </application>
 
 </manifest>

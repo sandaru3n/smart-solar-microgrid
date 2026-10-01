@@ -83,28 +83,73 @@
                         app:tint="@color/op_on_header" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvGreeting"
+                <!-- Greeting on the left, the primary Scan QR action on the right. -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:layout_marginEnd="8dp"
-                    android:accessibilityHeading="true"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:textColor="@color/op_on_header"
-                    android:textSize="26sp"
-                    android:textStyle="bold"
-                    tools:text="Good morning, Kamal" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginEnd="8dp"
-                    android:text="@string/operator_subtitle"
-                    android:textColor="@color/op_on_header_secondary"
-                    android:textSize="14sp" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvGreeting"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="12dp"
+                            android:accessibilityHeading="true"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:textColor="@color/op_on_header"
+                            android:textSize="26sp"
+                            android:textStyle="bold"
+                            tools:text="Good morning, Kamal" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="12dp"
+                            android:text="@string/operator_subtitle"
+                            android:textColor="@color/op_on_header_secondary"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnHeaderScan"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:layout_marginEnd="8dp"
+                        android:contentDescription="@string/operator_action_scan"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:paddingTop="11dp"
+                        android:paddingBottom="0dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:text="@string/operator_header_scan"
+                        android:textAllCaps="false"
+                        android:textColor="@color/op_header_start"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:tooltipText="@string/operator_action_scan"
+                        app:backgroundTint="@color/op_on_header"
+                        app:cornerRadius="20dp"
+                        app:elevation="4dp"
+                        app:icon="@drawable/ic_op_qr"
+                        app:iconGravity="top"
+                        app:iconPadding="4dp"
+                        app:iconSize="28dp"
+                        app:iconTint="@color/op_header_start"
+                        app:rippleColor="@color/op_header_end" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvUpdated"
