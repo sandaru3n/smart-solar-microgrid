@@ -16,6 +16,28 @@ export default function PendingUsersPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
 
+  // New state
+  const [nicModalOpen, setNicModalOpen] = useState(false);
+  const [nicImageUrl, setNicImageUrl] = useState('');
+  
+  const [activateModalOpen, setActivateModalOpen] = useState(false);
+  const [activateNic, setActivateNic] = useState('');
+  const [isActivating, setIsActivating] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
+  const showAlert = (message) => {
+    setAlertMessage(message);
+    setAlertModalOpen(true);
+  };
+
   const fetchPending = async () => {
     setLoading(true);
     setError('');
@@ -35,16 +57,17 @@ export default function PendingUsersPage() {
 
   const handleViewNIC = async (nic) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const res = await fetch(`/api/users/${encodeURIComponent(nic)}/nic-document`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to load NIC document.');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      setNicImageUrl(url);
+      setNicModalOpen(true);
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message);
     }
   };
 
@@ -63,13 +86,21 @@ export default function PendingUsersPage() {
   };
 
   const handleActivate = async (nic) => {
-    if (!window.confirm(`Are you sure you want to activate user ${nic}?`)) return;
+    setActivateNic(nic);
+    setActivateModalOpen(true);
+  };
+
+  const confirmActivate = async () => {
+    setIsActivating(true);
     try {
-      await usersApi.activate(nic);
-      alert('User activated successfully.');
+      await usersApi.activate(activateNic);
+      setActivateModalOpen(false);
+      showToast('Activation completed');
       fetchPending();
     } catch (err) {
-      alert(err.message || 'Failed to activate user.');
+      showAlert(err.message || 'Failed to activate user.');
+    } finally {
+      setIsActivating(false);
     }
   };
 
@@ -81,17 +112,17 @@ export default function PendingUsersPage() {
 
   const submitReject = async () => {
     if (rejectReason.trim() === '') {
-      alert('You must provide a rejection reason.');
+      showAlert('You must provide a rejection reason.');
       return;
     }
     setIsRejecting(true);
     try {
       await usersApi.reject(rejectNic, rejectReason);
-      alert('User registration rejected. An email has been sent.');
+      showAlert('User registration rejected. An email has been sent.');
       setRejectModalOpen(false);
       fetchPending();
     } catch (err) {
-      alert(err.message || 'Failed to reject user.');
+      showAlert(err.message || 'Failed to reject user.');
     } finally {
       setIsRejecting(false);
     }
@@ -136,7 +167,7 @@ export default function PendingUsersPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handleViewNIC(user.nic)}
-                          className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-on-secondary hover:bg-secondary/90"
+                          className="rounded-lg border border-secondary px-3 py-1.5 text-xs font-semibold text-secondary hover:bg-secondary hover:text-white transition-colors"
                         >
                           View NIC
                         </button>
@@ -219,6 +250,72 @@ export default function PendingUsersPage() {
                 {isRejecting ? 'Rejecting...' : 'Confirm Reject'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activate Modal */}
+      {activateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-surface-container-lowest p-6 shadow-xl border border-outline-variant/30">
+            <h2 className="text-xl font-bold text-on-surface mb-2">Confirm Activation</h2>
+            <p className="text-sm text-secondary mb-6">
+              Are you sure you want to activate user <strong>{activateNic}</strong>?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setActivateModalOpen(false)}
+                className="rounded-lg px-4 py-2 font-semibold text-secondary hover:bg-secondary-container hover:text-on-secondary-container transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmActivate}
+                disabled={isActivating}
+                className="rounded-lg bg-primary px-6 py-2 font-semibold text-on-primary hover:bg-primary/90 disabled:opacity-50"
+              >
+                {isActivating ? 'Activating...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alert Modal */}
+      {alertModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-surface-container-lowest p-6 shadow-xl border border-outline-variant/30 text-center">
+            <p className="text-base text-on-surface mb-6">{alertMessage}</p>
+            <button
+              onClick={() => setAlertModalOpen(false)}
+              className="rounded-lg bg-primary px-6 py-2 font-semibold text-on-primary hover:bg-primary/90 w-full"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* NIC Image Modal */}
+      {nicModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setNicModalOpen(false)}>
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col bg-surface-container-lowest rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-4 border-b border-outline-variant/30">
+              <h2 className="text-lg font-bold text-on-surface">NIC Document</h2>
+              <button onClick={() => setNicModalOpen(false)} className="text-secondary hover:text-on-surface font-bold text-xl px-2">&times;</button>
+            </div>
+            <div className="overflow-auto p-4 flex justify-center items-center bg-surface-container-low">
+              <img src={nicImageUrl} alt="NIC Document" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-[60] animate-[slide-up_0.3s_ease-out]">
+          <div className="rounded-xl bg-surface-container-high px-6 py-3 shadow-lg border border-outline-variant/30 flex items-center gap-3">
+            <span className="text-primary material-symbols-outlined">check_circle</span>
+            <p className="font-semibold text-on-surface">{toastMessage}</p>
           </div>
         </div>
       )}

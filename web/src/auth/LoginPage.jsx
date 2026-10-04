@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 export default function LoginPage() {
   const [nic, setNic] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -21,7 +22,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const user = await login(nic, password);
+      const user = await login(nic, password, rememberMe);
       
       // Redirect based on role
       if (user.role === 'BACKOFFICE') {
@@ -29,7 +30,7 @@ export default function LoginPage() {
       } else if (user.role === 'GRID_OPERATOR') {
         navigate('/dashboard');
       } else {
-        navigate('/dashboard/stations');
+        navigate('/reservations');
       }
     } catch (err) {
       setError(err.message || 'Login failed');
@@ -97,6 +98,25 @@ export default function LoginPage() {
               disabled={loading}
             />
           </div>
+
+          <div className="flex items-center justify-between mt-1 mb-2">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input 
+                type="checkbox" 
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-outline-variant/60 text-primary focus:ring-primary/20 bg-surface/50"
+              />
+              <span className="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Remember me</span>
+            </label>
+            <a 
+              href="/forgot-password" 
+              className="text-sm font-bold text-primary hover:text-primary/80 transition-colors"
+            >
+              Forgot Password?
+            </a>
+          </div>
+
           <button
             type="submit"
             disabled={loading}

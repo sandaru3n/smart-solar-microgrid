@@ -240,6 +240,12 @@ public async Task<IActionResult> GetPendingUsers()
 [HttpPatch("{nic}/deactivate")]
 public async Task<IActionResult> DeactivateUser(string nic)
 {
+    var loggedInNIC = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (loggedInNIC == nic)
+    {
+        return BadRequest(new { message = "You cannot deactivate your own account." });
+    }
+
     // Deactivate the selected user account.
     var result = await _userService.DeactivateUserAsync(nic);
 
@@ -298,6 +304,29 @@ public async Task<IActionResult> RejectRegistration(string nic, [FromBody] Rejec
 {
     var result = await _userService.RejectRegistrationAsync(nic, request.Reason);
     if (!result.Success)
+    {
+        return BadRequest(new { message = result.Message });
+    }
+    return Ok(new { message = result.Message });
+}
+
+[Authorize(Roles = "BACKOFFICE")]
+[HttpDelete("{nic}")]
+public async Task<IActionResult> DeleteUser(string nic)
+{
+    var targetUser = await _userService.GetByNICAsync(nic);
+    if (targetUser == null) 
+    {
+        return NotFound(new { message = "User not found." });
+    }
+
+    if (targetUser.Role == Role.BACKOFFICE)
+    {
+        return Forbid();
+    }
+
+    var result = await _userService.DeleteUserAsync(nic);
+    if (!result.Success) 
     {
         return BadRequest(new { message = result.Message });
     }
@@ -393,4 +422,40 @@ public async Task<IActionResult> RejectRegistration(string nic, [FromBody] Rejec
         }
         return Ok(new { message = result.Message, aiResponse = result.AiResponse });
     }
+
+    [Authorize]
+    [HttpPost("{nic}/request-email-change")]
+    public async Task<IActionResult> RequestEmailChange(string nic, [FromBody] EmailChangeRequest request)
+    {
+        var loggedInNIC = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (loggedInNIC != nic) return Forbid();
+
+        var result = await _userService.RequestEmailChangeAsync(nic, request.NewEmail);
+        if (!result.Success) return BadRequest(new { message = result.Message });
+        
+        return Ok(new { message = result.Message });
+    }
+
+    [Authorize]
+    [HttpPost("{nic}/verify-email-change")]
+    public async Task<IActionResult> VerifyEmailChange(string nic, [FromBody] EmailVerifyRequest request)
+    {
+        var loggedInNIC = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (loggedInNIC != nic) return Forbid();
+
+        var result = await _userService.VerifyEmailChangeAsync(nic, request.Otp);
+        if (!result.Success) return BadRequest(new { message = result.Message });
+        
+        return Ok(new { message = result.Message });
+    }
+}
+
+public class EmailChangeRequest
+{
+    public string NewEmail { get; set; } = string.Empty;
+}
+
+public class EmailVerifyRequest
+{
+    public string Otp { get; set; } = string.Empty;
 }

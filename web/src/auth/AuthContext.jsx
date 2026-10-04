@@ -5,12 +5,16 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
-  const login = async (nic, password) => {
+  const login = async (nic, password, rememberMe = false) => {
     const data = await authApi.login({ nic, password });
+    
+    if (data.role === 'PROSUMER') {
+      throw new Error('Prosumers must use the Mobile App to log in.');
+    }
     
     // Check if account is not active (though backend may block it too, we should handle it if passed)
     if (data.accountStatus === 'PENDING') {
@@ -28,8 +32,13 @@ export const AuthProvider = ({ children }) => {
       accountStatus: data.accountStatus,
     };
     
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    if (rememberMe) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(userData));
+    } else {
+      sessionStorage.setItem('token', data.token);
+      sessionStorage.setItem('user', JSON.stringify(userData));
+    }
     setUser(userData);
     return userData;
   };
@@ -37,6 +46,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     setUser(null);
   };
 

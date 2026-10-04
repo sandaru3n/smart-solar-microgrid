@@ -2,6 +2,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace SolarGrid.Api.Models;
 
+[BsonIgnoreExtraElements]
 public class User
 {
     [BsonId]
@@ -29,5 +30,13 @@ public class User
 
     public string NicImageUrl { get; set; } = string.Empty;
 
+    public string? ProfilePicUrl { get; set; }
+
     public string NicVerificationStatus { get; set; } = "PENDING_REVIEW";
+
+    public string? ResetPasswordOtp { get; set; }
+
+    public DateTime? ResetPasswordOtpExpiry { get; set; }
+    
+    public string? PendingNewEmail { get; set; }
 }
