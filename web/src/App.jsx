@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 
@@ -20,15 +21,22 @@ const getLinks = (role) => {
     ]
   }
   if (role === 'GRID_OPERATOR') {
+    const reservationIcon = { line: '/reservation-line.png', solid: '/reservation-solid.png' }
     return [
-      { to: '/dashboard/stations', label: 'Stations', end: true },
-      { to: '/dashboard/users/create-prosumer', label: 'Create Prosumer', end: true },
-      { type: 'label', label: 'Reservations' },
-      { to: '/reservations/new', label: 'Create reservations', end: true, nested: true },
-      { to: '/reservations', label: 'All reservations', end: true, nested: true, match: 'all-reservations' },
-      { to: '/reservations/pending', label: 'Pending reservations', end: true, nested: true },
-      { to: '/bookings', label: 'Bookings', end: false },
-      { to: '/profile', label: 'My Profile', end: true },
+      { to: '/dashboard/stations', label: 'Stations', end: true, icon: { line: '/stations-line.png', solid: '/stations-solid.png' } },
+      {
+        to: '/reservations',
+        label: 'Reservations',
+        end: true,
+        match: 'reservations-home',
+        icon: reservationIcon,
+        children: [
+          { to: '/reservations/new', label: 'Create reservations', end: true, nested: true },
+          { to: '/reservations/pending', label: 'Pending reservations', end: true, nested: true },
+        ],
+      },
+      { to: '/bookings', label: 'Bookings History', end: false, icon: { line: '/histroy-line.png', solid: '/histroy-solid.png' } },
+      { to: '/profile', label: 'My Profile', end: true, icon: { line: '/profile-line.png', solid: '/profile-solid.png' } },
     ]
   }
   if (role === 'PROSUMER') {
@@ -56,7 +64,7 @@ const crumbs = {
 }
 
 function isReservationNavActive(link, pathname, routerIsActive) {
-  if (link.match === 'all-reservations') {
+  if (link.match === 'reservations-home') {
     if (pathname === '/reservations') return true
     if (!pathname.startsWith('/reservations/')) return false
     const rest = pathname.slice('/reservations/'.length)
@@ -74,22 +82,16 @@ function isReservationNavActive(link, pathname, routerIsActive) {
 function reservationCrumb(pathname) {
   if (pathname === '/reservations/new' || pathname.startsWith('/reservations/new/')) return 'Create reservations'
   if (pathname === '/reservations/pending' || pathname.startsWith('/reservations/pending/')) return 'Pending reservations'
-  if (pathname === '/reservations' || pathname.startsWith('/reservations/')) return 'All reservations'
+  if (pathname === '/reservations' || pathname.startsWith('/reservations/')) return 'Reservations'
   return null
 }
 
-function navClass(isActive, nested) {
-  const inset = nested
-    ? isActive
-      ? 'pl-[29px] pr-4'
-      : 'pl-8 pr-4'
-    : isActive
-      ? 'pl-[13px] pr-4'
-      : 'px-4'
-
+function navClass(isActive, nested, hasMenu) {
+  const inset = nested ? 'ml-10' : ''
+  const pad = hasMenu ? 'py-2.5 pl-4 pr-10' : 'px-4 py-2.5'
   return isActive
-    ? `flex items-center ${inset} py-2.5 bg-surface-container text-on-surface font-semibold border-l-[3px] border-primary-container`
-    : `flex items-center ${inset} py-2.5 text-secondary hover:bg-surface-container-low hover:text-on-surface border-l-[3px] border-transparent`
+    ? `mx-3 flex items-center gap-2.5 ${inset} rounded-full bg-[#FFDD19] ${pad} font-semibold text-[#1C1914]`
+    : `mx-3 flex items-center gap-2.5 ${inset} rounded-full ${pad} text-[#3F3F46] hover:bg-[#FFF3B0] hover:text-[#1C1914]`
 }
 
 export default function App() {
@@ -102,47 +104,113 @@ export default function App() {
     navigate('/')
   }
 
+  const [reservationsOpen, setReservationsOpen] = useState(() => pathname.startsWith('/reservations'))
+
+  useEffect(() => {
+    if (pathname.startsWith('/reservations')) setReservationsOpen(true)
+  }, [pathname])
+
   // Use dynamic links based on role, fallback to [] if user is null
   const links = user ? getLinks(user.role) : getLinks(null)
+  const mobileLinks = links.flatMap((link) => (link.type === 'label' ? [] : [link, ...(link.children ?? [])]))
 
   return (
     <div className="min-h-screen bg-surface font-body-sm text-body-sm text-on-surface antialiased">
-      <aside className="fixed left-0 top-0 hidden h-full w-60 flex-col justify-between border-r border-outline-variant/30 bg-surface-container-lowest py-6 lg:flex">
+      <aside className="fixed left-0 top-0 hidden h-full w-60 flex-col justify-between border-r border-[#E7E5E4] bg-white py-6 lg:flex">
         <div className="flex flex-col gap-6">
-          <Link to={user?.role === 'BACKOFFICE' ? '/dashboard/users' : user?.role === 'GRID_OPERATOR' ? '/reservations' : '/dashboard/stations'} className="flex items-start gap-3 px-6">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-container shadow-sm">
-              <span className="material-symbols-outlined text-[20px] text-on-primary-container">sunny</span>
-            </div>
-            <div className="flex min-w-0 flex-col">
-              <span className="mb-1 text-[10px] font-semibold uppercase leading-none tracking-wider text-secondary">
-                Smart Solar Microgrid
+          <Link
+            to={user?.role === 'BACKOFFICE' ? '/dashboard/users' : user?.role === 'GRID_OPERATOR' ? '/reservations' : '/dashboard/stations'}
+            className="flex flex-col items-center gap-2 px-5"
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FFDD19] shadow-sm">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 text-[#1C1914]" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4" fill="currentColor" />
+                  <g stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" />
+                  </g>
+                </svg>
               </span>
-              <span className="truncate text-xl font-bold leading-tight text-on-surface">
-                {user?.role === 'GRID_OPERATOR' ? 'Grid Operator' : user?.role === 'BACKOFFICE' || !user ? 'BackOfficer' : user.name}
-              </span>
-              <span className="text-[11px] font-medium text-secondary">
-                {user?.role === 'BACKOFFICE' ? 'Administration' : user?.role === 'GRID_OPERATOR' ? 'Grid Operator' : 'Station Management'}
-              </span>
-            </div>
+              <img src="/solarix_logo.png" alt="Solarix" className="h-10 w-auto max-w-full object-contain" />
+            </span>
+            <span className="text-[11px] font-semibold text-[#3F3F46]">
+              {user?.role === 'BACKOFFICE' ? 'BackOfficer' : user?.role === 'GRID_OPERATOR' ? 'Grid Operator' : 'Station Management'}
+            </span>
           </Link>
           <nav className="mt-4 flex flex-col gap-1">
             {links.map((link) =>
               link.type === 'label' ? (
                 <span
                   key={link.label}
-                  className="px-4 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-secondary"
+                  className="mx-3 flex items-center gap-2.5 px-4 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[#78716C]"
                 >
                   {link.label}
                 </span>
               ) : (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  end={link.end}
-                  className={({ isActive }) => navClass(isReservationNavActive(link, pathname, isActive), link.nested)}
-                >
-                  {link.label}
-                </NavLink>
+                <div key={link.to} className="flex flex-col gap-1">
+                  <div className="relative">
+                    <NavLink
+                      to={link.to}
+                      end={link.end}
+                      className={({ isActive }) =>
+                        navClass(isReservationNavActive(link, pathname, isActive), link.nested, Boolean(link.children))
+                      }
+                    >
+                      {({ isActive }) => {
+                        const active = isReservationNavActive(link, pathname, isActive)
+                        return (
+                          <>
+                            {link.icon && (
+                              <img
+                                src={active ? link.icon.solid : link.icon.line}
+                                alt=""
+                                className="h-5 w-5 shrink-0 object-contain"
+                              />
+                            )}
+                            <span className="min-w-0">{link.label}</span>
+                          </>
+                        )
+                      }}
+                    </NavLink>
+                    {link.children && (
+                      <button
+                        type="button"
+                        aria-expanded={reservationsOpen}
+                        aria-label={reservationsOpen ? 'Hide reservation menus' : 'Show reservation menus'}
+                        onClick={() => setReservationsOpen((open) => !open)}
+                        className="absolute top-1/2 right-5 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[#1C1914]"
+                      >
+                        <svg
+                          viewBox="0 0 20 20"
+                          className={`h-4 w-4 transition-transform ${reservationsOpen ? '' : '-rotate-90'}`}
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M5 7.5 10 12.5 15 7.5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  {link.children && reservationsOpen &&
+                    link.children.map((child) => (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        end={child.end}
+                        className={({ isActive }) =>
+                          navClass(isReservationNavActive(child, pathname, isActive), child.nested)
+                        }
+                      >
+                        {child.label}
+                      </NavLink>
+                    ))}
+                </div>
               ),
             )}
           </nav>
@@ -176,14 +244,18 @@ export default function App() {
             <span className="hidden text-outline-variant sm:inline">/</span>
             <span className="text-label-md font-semibold text-on-surface">
               {reservationCrumb(pathname) ||
-                (pathname.startsWith('/bookings') ? 'Bookings' : crumbs[pathname] || 'Dashboard')}
+                (pathname.startsWith('/bookings')
+                  ? user?.role === 'GRID_OPERATOR'
+                    ? 'Bookings History'
+                    : 'Bookings'
+                  : crumbs[pathname] || 'Dashboard')}
             </span>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm font-semibold hidden sm:inline">
               {user?.role === 'BACKOFFICE' ? 'BackOfficer' : user?.role === 'GRID_OPERATOR' ? 'Grid Operator' : user?.name}
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FFDD19] text-[#1C1914]">
               <span className="material-symbols-outlined text-[18px]">person</span>
             </div>
             {user && (
@@ -198,7 +270,7 @@ export default function App() {
         </header>
 
         <nav className="fixed top-14 right-0 left-0 z-30 flex gap-1 overflow-x-auto border-b border-outline-variant/20 bg-surface-container-lowest px-3 py-2 lg:hidden">
-          {links.map((link) =>
+          {mobileLinks.map((link) =>
             link.type === 'label' ? null : (
               <NavLink
                 key={link.to}
@@ -206,8 +278,8 @@ export default function App() {
                 end={link.end}
                 className={({ isActive }) =>
                   isReservationNavActive(link, pathname, isActive)
-                    ? 'shrink-0 rounded-lg bg-surface-container px-3 py-1.5 text-label-md font-semibold text-on-surface'
-                    : 'shrink-0 rounded-lg px-3 py-1.5 text-label-md text-secondary'
+                    ? 'shrink-0 rounded-full bg-[#FFDD19] px-3 py-1.5 text-label-md font-semibold text-[#1C1914]'
+                    : 'shrink-0 rounded-full px-3 py-1.5 text-label-md text-[#3F3F46]'
                 }
               >
                 {link.label}
