@@ -1,8 +1,8 @@
 .rm-module {
-  --rm-primary: #795900;
-  --rm-primary-container: #f5b800;
-  --rm-primary-fixed: #ffdf9f;
-  --rm-primary-soft: #fff8e6;
+  --rm-primary: #1c1914;
+  --rm-primary-container: #ffdd19;
+  --rm-primary-fixed: #fff3b0;
+  --rm-primary-soft: #fffbeb;
   --rm-text: #0f172a;
   --rm-muted: #64748b;
   --rm-border: #e2e8f0;
@@ -130,13 +130,25 @@
 }
 
 .rm-header-stat__icon {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   border-radius: 12px;
-  background: var(--rm-primary-soft);
-  color: var(--rm-primary);
+  background: #ffdd19;
+  color: #1c1914;
+}
+
+.rm-header-stat__icon .material-symbols-outlined,
+.rm-header-stat__icon svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
+  line-height: 22px;
+  text-align: center;
 }
 
 .rm-header-stat__label {
@@ -152,6 +164,14 @@
   display: block;
   font-size: 14px;
   font-weight: 700;
+}
+
+.rm-header-stat__hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--rm-muted);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* Layout */
@@ -227,7 +247,7 @@
   height: 44px;
   border-radius: 14px;
   background: var(--rm-primary-container);
-  color: #fff;
+  color: #1c1914;
 }
 
 .rm-feature-icon--soft {
@@ -286,8 +306,12 @@
 }
 
 .rm-panel-head__eyebrow {
-  display: block;
-  color: var(--rm-primary);
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #ffdd19;
+  color: #1c1914;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -300,13 +324,24 @@
 }
 
 .rm-panel-head__icon {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
   border-radius: 12px;
-  background: var(--rm-tint);
-  color: var(--rm-primary);
+  background: #ffdd19;
+  color: #1c1914;
+}
+
+.rm-panel-head__icon .material-symbols-outlined {
+  display: block;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
+  line-height: 22px;
+  text-align: center;
 }
 
 .rm-panel__status {
@@ -436,12 +471,12 @@
 .rm-button--primary {
   border-color: var(--rm-primary-container);
   background: var(--rm-primary-container);
-  color: #3d2c00;
-  box-shadow: 0 8px 20px -10px rgb(245 184 0 / 0.9);
+  color: #1c1914;
+  box-shadow: none;
 }
 
 .rm-button--primary:hover:not(:disabled) {
-  background: #e6ac00;
+  background: #ffe566;
 }
 
 .rm-button--soft {
@@ -451,7 +486,7 @@
 }
 
 .rm-button--soft:hover:not(:disabled) {
-  background: #ffd57a;
+  background: #ffe98a;
 }
 
 .rm-button--ghost {
@@ -838,7 +873,7 @@
   height: 48px;
   border-radius: 50%;
   background: var(--rm-primary-container);
-  color: #3d2c00;
+  color: #1c1914;
   font-size: 16px;
   font-weight: 800;
 }
@@ -874,13 +909,14 @@
 }
 
 .rm-station:hover:not(:disabled) {
-  border-color: #f8d266;
+  border-color: #ffdd19;
 }
 
 .rm-station.is-selected {
-  border-color: var(--rm-primary-container);
-  background: var(--rm-primary-soft);
-  box-shadow: 0 8px 20px -14px rgb(245 184 0 / 0.9);
+  border-color: #ffdd19;
+  border-width: 2px;
+  background: #fffbeb;
+  box-shadow: none;
 }
 
 .rm-station:disabled {
@@ -970,14 +1006,14 @@
 }
 
 .rm-day:hover {
-  border-color: #f8d266;
+  border-color: #ffdd19;
 }
 
 .rm-day.is-active {
-  border-color: var(--rm-primary-container);
-  background: var(--rm-primary-container);
-  color: #3d2c00;
-  box-shadow: 0 8px 18px -10px rgb(245 184 0 / 0.9);
+  border-color: #ffdd19;
+  background: #ffdd19;
+  color: #1c1914;
+  box-shadow: none;
 }
 
 .rm-day__weekday {
@@ -1006,7 +1042,7 @@
 }
 
 .rm-day.is-active .rm-day__count {
-  color: #3d2c00;
+  color: #1c1914;
 }
 
 .rm-slot-section__head {
@@ -1054,7 +1090,7 @@
 }
 
 .rm-slot:hover:not(:disabled) {
-  border-color: #f8d266;
+  border-color: #ffdd19;
 }
 
 .rm-slot.is-selected {
@@ -1188,8 +1224,8 @@
 }
 
 .rm-sample:hover {
-  border-color: #f8d266;
-  background: var(--rm-primary-soft);
+  border-color: #ffdd19;
+  background: #fff;
 }
 
 .rm-sample__who {

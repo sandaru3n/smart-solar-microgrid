@@ -238,7 +238,7 @@ export default function StationsPage() {
       <div className="flex flex-col justify-between gap-4 border-b border-outline-variant/30 pb-2 md:flex-row md:items-end">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-primary-container px-2 py-0.5 text-label-sm font-semibold uppercase tracking-wide text-on-primary-container">
+            <span className="rounded-full bg-[#FFDD19] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#1C1914]">
               {viewOnly ? 'View only' : 'BackOfficer Control'}
             </span>
             <span className="text-label-sm text-secondary">
@@ -256,7 +256,7 @@ export default function StationsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-3 rounded-xl bg-surface-container-lowest px-4 py-2 shadow-sm">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-container text-primary">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FFDD19] text-[#1C1914]">
               <span className="material-symbols-outlined text-[18px]">solar_power</span>
             </div>
             <div className="flex flex-col">
@@ -290,7 +290,9 @@ export default function StationsPage() {
           <div className="flex w-full flex-col gap-5 rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] text-secondary">ev_station</span>
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FFDD19] text-[#1C1914]">
+                  <span className="material-symbols-outlined text-[20px]">ev_station</span>
+                </span>
                 <h2 className="font-headline-md text-headline-md font-semibold text-on-surface">All stations</h2>
               </div>
               <span className="flex items-center gap-1.5 rounded-full bg-[#DCFCE7] px-2.5 py-0.5 text-label-sm font-semibold text-[#15803D]">
@@ -304,7 +306,7 @@ export default function StationsPage() {
             <div className="relative">
               <span className="material-symbols-outlined absolute top-3 left-3 text-[18px] text-secondary">search</span>
               <input
-                className="h-10 w-full rounded-lg bg-surface-container-low pr-3 pl-9 text-on-surface outline-none placeholder:text-secondary focus:ring-2 focus:ring-primary-container"
+                className="h-10 w-full rounded-full border border-[#E2E8F0] bg-[#F8FAFC] pr-3 pl-9 text-on-surface outline-none placeholder:text-secondary focus:border-[#FFDD19] focus:ring-2 focus:ring-[#FFDD19]"
                 placeholder="Filter stations..."
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -329,10 +331,10 @@ export default function StationsPage() {
                         openStation(station.id).catch((error) => toast('error', error.message))
                       }
                     }}
-                    className={`flex cursor-pointer flex-col gap-2.5 rounded-xl p-4 text-left shadow-sm transition ${
+                    className={`flex cursor-pointer flex-col gap-2.5 rounded-2xl p-4 text-left transition ${
                       active
-                        ? 'border-2 border-[#FACC15] bg-[#FEF9C3]'
-                        : 'bg-surface-container-low hover:bg-surface-container'
+                        ? 'border-2 border-[#FFDD19] bg-[#FFFBEB]'
+                        : 'border border-[#E2E8F0] bg-white hover:border-[#FFDD19]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -340,7 +342,7 @@ export default function StationsPage() {
                         <span className="flex items-center gap-1.5 font-bold text-on-surface">
                           {station.name}
                           {active && (
-                            <span className="material-symbols-outlined text-[16px] text-primary">verified</span>
+                            <span className="material-symbols-outlined text-[16px] text-[#1C1914]">verified</span>
                           )}
                         </span>
                         <span className="flex items-center gap-1 text-secondary">
@@ -371,11 +373,11 @@ export default function StationsPage() {
                     </div>
                     <div className="mt-1 flex items-center justify-between border-t border-outline-variant/20 pt-2 text-label-sm font-medium text-on-surface-variant">
                       <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px] text-primary">bolt</span>
+                        <span className="material-symbols-outlined text-[14px] text-[#1C1914]">bolt</span>
                         {station.capacityKw} kW
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px] text-primary">grid_view</span>
+                        <span className="material-symbols-outlined text-[14px] text-[#1C1914]">grid_view</span>
                         {station.batteryStorageSlots} slots
                       </span>
                     </div>
@@ -391,7 +393,7 @@ export default function StationsPage() {
           {viewOnly && selected && (
             <div className="flex flex-col gap-6 rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
               <div className="flex items-center gap-3 border-b border-outline-variant/20 pb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container text-primary">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFDD19] text-[#1C1914]">
                   <span className="material-symbols-outlined text-[22px]">visibility</span>
                 </div>
                 <div>
@@ -400,38 +402,30 @@ export default function StationsPage() {
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="md:col-span-2">
-                  <span className="text-label-sm uppercase text-secondary">Address</span>
-                  <p className="font-semibold">{editForm.address || 'No address'}</p>
-                </div>
-                <div>
-                  <span className="text-label-sm uppercase text-secondary">Latitude</span>
-                  <p className="font-semibold">{editForm.latitude}</p>
-                </div>
-                <div>
-                  <span className="text-label-sm uppercase text-secondary">Longitude</span>
-                  <p className="font-semibold">{editForm.longitude}</p>
-                </div>
-                <div>
-                  <span className="text-label-sm uppercase text-secondary">Capacity</span>
-                  <p className="font-semibold">{editForm.capacityKw} kW</p>
-                </div>
-                <div>
-                  <span className="text-label-sm uppercase text-secondary">Battery slots</span>
-                  <p className="font-semibold">{editForm.batteryStorageSlots}</p>
-                </div>
+                {[
+                  ['Address', editForm.address || 'No address', true],
+                  ['Latitude', editForm.latitude],
+                  ['Longitude', editForm.longitude],
+                  ['Capacity', `${editForm.capacityKw} kW`],
+                  ['Battery slots', editForm.batteryStorageSlots],
+                ].map(([label, value, wide]) => (
+                  <div key={label} className={`rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3 ${wide ? 'md:col-span-2' : ''}`}>
+                    <span className="block text-[11px] font-bold uppercase tracking-wider text-[#78716C]">{label}</span>
+                    <p className="mt-1 font-semibold text-[#1C1914]">{value}</p>
+                  </div>
+                ))}
               </div>
-              <div className="overflow-x-auto rounded-xl bg-surface-container-low">
+              <div className="overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="bg-surface-container text-label-sm uppercase tracking-wider text-secondary">
+                    <tr className="bg-[#FFDD19] text-[11px] font-bold uppercase tracking-wider text-[#1C1914]">
                       <th className="px-4 py-3">Day</th>
                       <th className="px-4 py-3">Opening</th>
                       <th className="px-4 py-3">Closing</th>
                       <th className="px-4 py-3">Available</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-outline-variant/10">
+                  <tbody className="divide-y divide-[#FFDD19]/30 bg-[#FFDD19]/15">
                     {schedules.map((schedule) => (
                       <tr key={schedule.day}>
                         <td className="px-4 py-3 font-semibold">{schedule.day}</td>
@@ -514,10 +508,10 @@ export default function StationsPage() {
                       </h3>
                       <p className="text-secondary">Use edit to change a day. Save changes stores the full week.</p>
                     </div>
-                    <div className="overflow-x-auto rounded-xl bg-surface-container-low">
+                    <div className="overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="bg-surface-container text-label-sm uppercase tracking-wider text-secondary">
+                          <tr className="bg-[#FFDD19] text-[11px] font-bold uppercase tracking-wider text-[#1C1914]">
                             <th className="px-4 py-3">Day</th>
                             <th className="px-4 py-3">Opening</th>
                             <th className="px-4 py-3">Closing</th>
@@ -525,7 +519,7 @@ export default function StationsPage() {
                             <th className="px-4 py-3 text-right">Edit</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-outline-variant/10">
+                        <tbody className="divide-y divide-[#FFDD19]/30 bg-[#FFDD19]/15">
                           {schedules.map((schedule) => {
                             const editing = editingDay === schedule.day
                             return (

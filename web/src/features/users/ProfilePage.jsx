@@ -34,51 +34,77 @@ export default function ProfilePage() {
 
   if (!profile) return null;
 
+  const roleLabel =
+    {
+      GRID_OPERATOR: 'Grid Operator',
+      BACKOFFICE: 'BackOfficer',
+      PROSUMER: 'Prosumer',
+    }[profile.role] || profile.role
+
+  const statusLabel =
+    profile.accountStatus === 'ACTIVE'
+      ? 'Active'
+      : profile.accountStatus === 'PENDING'
+        ? 'Pending'
+        : profile.accountStatus
+
+  const statusClass =
+    profile.accountStatus === 'ACTIVE'
+      ? 'bg-[#DCFCE7] text-[#15803D]'
+      : profile.accountStatus === 'PENDING'
+        ? 'bg-[#FFF3B0] text-[#1C1914]'
+        : 'bg-[#FEE2E2] text-[#DC2626]'
+
+  const fields = [
+    ['NIC', profile.nic],
+    ['Email', profile.email || '—'],
+    ['Phone', profile.phone || '—'],
+    ['Address', profile.address || '—'],
+  ]
+
   return (
-    <div className="flex flex-col gap-6 max-w-3xl mx-auto">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-on-surface">My Profile</h1>
-        <p className="text-sm text-secondary">View your account details</p>
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <span className="inline-flex w-fit rounded-full bg-[#FFDD19] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#1C1914]">
+          Account
+        </span>
+        <h1 className="text-[32px] font-extrabold tracking-tight text-[#1C1914]">My Profile</h1>
+        <p className="text-sm text-[#64748B]">View your account details</p>
       </div>
 
-      <div className="rounded-2xl bg-surface-container-lowest p-8 shadow-sm border border-outline-variant/30">
-        <div className="flex items-center gap-6 mb-8">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary-container shadow-sm">
-            <span className="material-symbols-outlined text-[40px] text-on-primary-container">person</span>
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-on-surface">{profile.name}</h2>
-            <p className="text-secondary">{profile.role}</p>
+      <div className="rounded-[20px] border border-[#E2E8F0] bg-white p-8 shadow-sm">
+        <div className="mb-8 flex items-center gap-5">
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#FFDD19] text-[#1C1914]">
+            <svg viewBox="0 0 24 24" className="h-8 w-8" aria-hidden="true">
+              <circle cx="12" cy="8" r="3.2" fill="currentColor" />
+              <path
+                d="M5.2 19.2c.9-3.2 3.4-4.8 6.8-4.8s5.9 1.6 6.8 4.8"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-xl font-bold text-[#1C1914]">{profile.name}</h2>
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${statusClass}`}>
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                {statusLabel}
+              </span>
+            </div>
+            <p className="text-sm font-semibold text-[#64748B]">{roleLabel}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 border-t border-outline-variant/20 pt-8">
-          <div>
-            <span className="block text-xs font-medium text-secondary uppercase tracking-wider">NIC</span>
-            <span className="mt-1 block text-sm font-semibold text-on-surface">{profile.nic}</span>
-          </div>
-          <div>
-            <span className="block text-xs font-medium text-secondary uppercase tracking-wider">Status</span>
-            <span className={`mt-1 inline-block rounded-md px-2 py-1 text-xs font-semibold ${
-              profile.accountStatus === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-              profile.accountStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-red-100 text-red-800'
-            }`}>
-              {profile.accountStatus}
-            </span>
-          </div>
-          <div>
-            <span className="block text-xs font-medium text-secondary uppercase tracking-wider">Email</span>
-            <span className="mt-1 block text-sm font-semibold text-on-surface">{profile.email || '-'}</span>
-          </div>
-          <div>
-            <span className="block text-xs font-medium text-secondary uppercase tracking-wider">Phone</span>
-            <span className="mt-1 block text-sm font-semibold text-on-surface">{profile.phone || '-'}</span>
-          </div>
-          <div className="md:col-span-2">
-            <span className="block text-xs font-medium text-secondary uppercase tracking-wider">Address</span>
-            <span className="mt-1 block text-sm font-semibold text-on-surface">{profile.address || '-'}</span>
-          </div>
+        <div className="grid grid-cols-1 gap-4 border-t border-[#E2E8F0] pt-8 md:grid-cols-2">
+          {fields.map(([label, value]) => (
+            <div key={label} className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-[#78716C]">{label}</span>
+              <span className="mt-1 block text-sm font-semibold text-[#1C1914]">{value}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
