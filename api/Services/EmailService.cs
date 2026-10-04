@@ -19,29 +19,38 @@ public class EmailService : IEmailService
     {
         try
         {
-            var message = new MailMessage
+            _ = Task.Run(async () =>
             {
-                From = new MailAddress(_settings.FromEmail, _settings.FromName),
-                Subject = "Smart Solar Microgrid - Email Verification",
-                Body = $"Smart Solar Microgrid\n\nYour email verification OTP is:\n\n{otp}\n\nThis OTP expires in approximately 10 minutes.\n",
-                IsBodyHtml = false
-            };
+                try
+                {
+                    var message = new MailMessage
+                    {
+                        From = new MailAddress(_settings.FromEmail, _settings.FromName),
+                        Subject = "Smart Solar Microgrid - Email Verification",
+                        Body = $"Smart Solar Microgrid\n\nYour email verification OTP is:\n\n{otp}\n\nThis OTP expires in approximately 10 minutes.\n",
+                        IsBodyHtml = false
+                    };
+                    message.To.Add(new MailAddress(toEmail));
 
-            message.To.Add(new MailAddress(toEmail));
+                    using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
+                    {
+                        Credentials = new NetworkCredential(_settings.SmtpUsername, _settings.SmtpPassword),
+                        EnableSsl = true
+                    };
 
-            using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
-            {
-                Credentials = new NetworkCredential(_settings.SmtpUsername, _settings.SmtpPassword),
-                EnableSsl = true
-            };
-
-            await client.SendMailAsync(message);
-            _logger.LogInformation($"OTP email sent successfully to {toEmail}");
+                    await client.SendMailAsync(message);
+                    _logger.LogInformation($"OTP email sent successfully to {toEmail}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send OTP email to {Email}", toEmail);
+                }
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send OTP email to {Email}", toEmail);
-            throw new InvalidOperationException("Failed to send email. Please check SMTP configuration.");
+            _logger.LogError(ex, "Error scheduling OTP email to {Email}", toEmail);
+            throw new InvalidOperationException("Failed to schedule email.");
         }
     }
 
@@ -49,28 +58,37 @@ public class EmailService : IEmailService
     {
         try
         {
-            var message = new MailMessage
+            _ = Task.Run(async () =>
             {
-                From = new MailAddress(_settings.FromEmail, _settings.FromName),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = false
-            };
+                try
+                {
+                    var message = new MailMessage
+                    {
+                        From = new MailAddress(_settings.FromEmail, _settings.FromName),
+                        Subject = subject,
+                        Body = body,
+                        IsBodyHtml = false
+                    };
+                    message.To.Add(new MailAddress(toEmail));
 
-            message.To.Add(new MailAddress(toEmail));
+                    using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
+                    {
+                        Credentials = new NetworkCredential(_settings.SmtpUsername, _settings.SmtpPassword),
+                        EnableSsl = true
+                    };
 
-            using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
-            {
-                Credentials = new NetworkCredential(_settings.SmtpUsername, _settings.SmtpPassword),
-                EnableSsl = true
-            };
-
-            await client.SendMailAsync(message);
-            _logger.LogInformation($"Email '{subject}' sent successfully to {toEmail}");
+                    await client.SendMailAsync(message);
+                    _logger.LogInformation($"Email '{subject}' sent successfully to {toEmail}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send email to {Email}", toEmail);
+                }
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {Email}", toEmail);
+            _logger.LogError(ex, "Error scheduling email to {Email}", toEmail);
         }
     }
 }

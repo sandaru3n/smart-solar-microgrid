@@ -7,6 +7,13 @@ import com.ead.solargrid.R
 import com.ead.solargrid.databinding.ActivityProsumerHomeBinding
 import com.ead.solargrid.ui.SystemBarUtils
 
+import androidx.lifecycle.lifecycleScope
+import com.ead.solargrid.api.ApiClient
+import com.ead.solargrid.database.SessionManager
+import com.ead.solargrid.ui.auth.LoginActivity
+import kotlinx.coroutines.launch
+import android.content.Intent
+
 class ProsumerHomeActivity : AppCompatActivity(), ProsumerNavigator {
 
     companion object {
@@ -59,6 +66,56 @@ class ProsumerHomeActivity : AppCompatActivity(), ProsumerNavigator {
         super.onSaveInstanceState(outState)
         if (::binding.isInitialized) {
             outState.putInt(KEY_SELECTED_TAB, binding.bottomNav.selectedItemId)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            try {
+                val session = SessionManager(this@ProsumerHomeActivity)
+                val user = session.getUserSession()
+                if (user != null) {
+                    val api = ApiClient.getApiService(this@ProsumerHomeActivity)
+                    val response = api.getUser(user.nic)
+                    if (response.isSuccessful) {
+                        val body = response.body()
+                        if (body?.accountStatus == "DEACTIVATED") {
+                            session.logout()
+                            startActivity(Intent(this@ProsumerHomeActivity, LoginActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            })
+                            finish()
+                        } else {
+                            session.saveUserSession(
+                                nic = body!!.nic,
+                                name = body.name,
+                                email = body.email,
+                                phone = body.phone.orEmpty(),
+                                address = body.address.orEmpty(),
+                                role = body.role,
+                                accountStatus = body.accountStatus,
+                                profilePicUrl = body.profilePicUrl
+                            )
+                            loadProfilePic(body.profilePicUrl)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore network errors here
+            }
+        }
+    }
+
+    private fun loadProfilePic(url: String?) {
+        if (url.isNullOrEmpty()) return
+        try {
+            com.bumptech.glide.Glide.with(this)
+                .load(url)
+                .circleCrop()
+                .into(binding.brandHeader.btnBrandProfile)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

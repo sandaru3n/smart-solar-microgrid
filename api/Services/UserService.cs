@@ -246,6 +246,52 @@ public class UserService
     return (true, "Staff account created successfully.", user);
 }
 
+    public async Task<(bool Success, string Message)> ForgotPasswordAsync(string email)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null)
+        {
+            return (false, "No account found with this email.");
+        }
+
+        var otp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        user.ResetPasswordOtp = BCrypt.Net.BCrypt.HashPassword(otp);
+        user.ResetPasswordOtpExpiry = DateTime.UtcNow.AddMinutes(15);
+
+        await _userRepository.UpdateAsync(user);
+        await _emailService.SendOtpEmailAsync(user.Email, otp);
+
+        return (true, "A password reset OTP has been sent to your email.");
+    }
+
+    public async Task<(bool Success, string Message)> ResetPasswordAsync(string email, string otp, string newPassword)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null || user.ResetPasswordOtp == null || user.ResetPasswordOtpExpiry == null)
+        {
+            return (false, "Invalid request.");
+        }
+
+        if (DateTime.UtcNow > user.ResetPasswordOtpExpiry.Value)
+        {
+            return (false, "OTP has expired. Please request a new one.");
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(otp, user.ResetPasswordOtp))
+        {
+            return (false, "Invalid OTP.");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.ResetPasswordOtp = null;
+        user.ResetPasswordOtpExpiry = null;
+        user.UpdatedDate = DateTime.UtcNow;
+
+        await _userRepository.UpdateAsync(user);
+
+        return (true, "Password has been successfully changed.");
+    }
+
     public async Task<(bool Success, string Message)> UpdateUserAsync(User user)
     {
         var existingUser = await _userRepository.GetByNICAsync(user.NIC);
@@ -275,10 +321,11 @@ public class UserService
         {
             existingUser.Name = request.Name.Trim();
         }
-        if (!string.IsNullOrWhiteSpace(request.Email))
-        {
-            existingUser.Email = request.Email.Trim();
-        }
+        // Email updates are handled by a separate verified flow
+        // if (!string.IsNullOrWhiteSpace(request.Email))
+        // {
+        //     existingUser.Email = request.Email.Trim();
+        // }
         
         if (request.Phone != null)
         {
@@ -288,6 +335,11 @@ public class UserService
         if (request.Address != null)
         {
             existingUser.Address = request.Address.Trim();
+        }
+        
+        if (request.ProfilePicUrl != null)
+        {
+            existingUser.ProfilePicUrl = request.ProfilePicUrl.Trim();
         }
 
         existingUser.UpdatedDate = DateTime.UtcNow;
@@ -407,11 +459,12 @@ public async Task<(bool Success, string Message)> RejectRegistrationAsync(string
 
     public async Task<(bool Success, string Message, string? AiResponse)> ValidateNicWithAiAsync(string nic)
     {
-        var imageUrl = await GetNicImageUrlAsync(nic);
-        if (string.IsNullOrEmpty(imageUrl))
+        var pending = await _pendingRegistrationRepository.GetByNicOrEmailAsync(nic, nic);
+        if (pending == null || string.IsNullOrEmpty(pending.NicImageUrl))
         {
             return (false, "Could not find NIC document URL to validate.", null);
         }
+        var imageUrl = pending.NicImageUrl;
 
         try
         {
@@ -455,22 +508,68 @@ public async Task<(bool Success, string Message)> RejectRegistrationAsync(string
             var nameMatch = System.Text.RegularExpressions.Regex.Match(parsedText, @"(?i)(?:Name|Name in Full)[\s:]*([A-Za-z\s\.]+)");
 
             string report = "";
+            bool isNicValid = false;
+            
             if (nicMatch.Success)
             {
-                report += $"✅ VALID NIC DETECTED!\nFound NIC Number: {nicMatch.Value.ToUpper()}\n\n";
+                var detectedNic = nicMatch.Value.ToUpper();
+                if (detectedNic == pending.NIC.ToUpper())
+                {
+                    report += $"✅ NIC MATCH: Detected NIC ({detectedNic}) matches the registered NIC perfectly!\n\n";
+                    isNicValid = true;
+                }
+                else
+                {
+                    report += $"❌ NIC MISMATCH: Detected NIC ({detectedNic}) does NOT match the registered NIC ({pending.NIC}).\n\n";
+                }
+            }
+            else if (parsedText.Replace(" ", "").Contains(pending.NIC, StringComparison.OrdinalIgnoreCase))
+            {
+                report += $"✅ NIC MATCH: Found the registered NIC ({pending.NIC}) in the text, although it was not formatted perfectly.\n\n";
+                isNicValid = true;
             }
             else if (parsedText.Contains("Identity Card", StringComparison.OrdinalIgnoreCase) || parsedText.Contains("National", StringComparison.OrdinalIgnoreCase))
             {
-                report += "⚠️ PARTIAL MATCH: Found ID keywords, but could not read the exact NIC Number clearly.\n\n";
+                report += $"⚠️ PARTIAL MATCH: Found ID keywords, but could not detect the registered NIC ({pending.NIC}).\n\n";
             }
             else
             {
-                report += "❌ INVALID DOCUMENT: Could not find any NIC numbers or keywords. This might be a selfie or random document.\n\n";
+                report += $"❌ INVALID DOCUMENT: Could not find any NIC numbers or keywords. Expected {pending.NIC}.\n\n";
             }
 
+            bool isNameValid = false;
             if (nameMatch.Success)
             {
-                report += $"Detected Name: {nameMatch.Groups[1].Value.Trim()}\n";
+                report += $"Detected Name Field (OCR): {nameMatch.Groups[1].Value.Trim()}\n";
+            }
+
+            var nameParts = pending.Name.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            int matchedParts = 0;
+            foreach (var part in nameParts)
+            {
+                if (part.Length > 2 && parsedText.Contains(part, StringComparison.OrdinalIgnoreCase))
+                {
+                    matchedParts++;
+                }
+            }
+
+            if (matchedParts > 0)
+            {
+                report += $"✅ NAME MATCH: Found {matchedParts} out of {nameParts.Length} name parts from registered name ({pending.Name}) in the document.\n\n";
+                isNameValid = true;
+            }
+            else
+            {
+                report += $"❌ NAME MISMATCH: Could not find the registered name ({pending.Name}) anywhere in the document.\n\n";
+            }
+            
+            if (isNicValid && isNameValid)
+            {
+                report = "🌟 OVERALL RESULT: VERIFIED\nBoth Name and NIC match the registration details!\n\n" + report;
+            }
+            else
+            {
+                report = "⛔ OVERALL RESULT: MISMATCH OR UNCLEAR\nPlease verify manually.\n\n" + report;
             }
 
             report += "\n--- Raw Scanned Text ---\n" + parsedText.Replace("\r", " ").Replace("\n", " ");
@@ -487,7 +586,7 @@ public async Task<(bool Success, string Message)> RejectRegistrationAsync(string
 public async Task<(bool Success, string Message)> ActivateUserAsync(string nic)
 {
     var pending = await _pendingRegistrationRepository.GetByNicOrEmailAsync(nic, nic);
-    if (pending != null && pending.IsEmailVerified)
+    if (pending != null)
     {
         var newUser = new User
         {
@@ -508,6 +607,10 @@ public async Task<(bool Success, string Message)> ActivateUserAsync(string nic)
 
         await _userRepository.CreateAsync(newUser);
         await _pendingRegistrationRepository.DeleteAsync(pending.Id);
+        
+        await _emailService.SendEmailAsync(pending.Email, "Account Approved", 
+            "Your account has been approved by the SolarGrid backoffice team. You can now log in and book energy slots.");
+            
         return (true, "User activated successfully.");
     }
 
@@ -528,7 +631,19 @@ public async Task<(bool Success, string Message)> ActivateUserAsync(string nic)
 
     await _userRepository.UpdateAsync(user);
 
+    await _emailService.SendEmailAsync(user.Email, "Account Approved", 
+        "Your account has been approved by the SolarGrid backoffice team. You can now log in and book energy slots.");
+
     return (true, "User activated successfully.");
+}
+
+public async Task<(bool Success, string Message)> DeleteUserAsync(string nic)
+{
+    var user = await _userRepository.GetByNICAsync(nic);
+    if (user == null) return (false, "User not found.");
+    
+    await _userRepository.DeleteAsync(user.NIC);
+    return (true, "User deleted successfully.");
 }
 
 
@@ -655,4 +770,56 @@ public async Task<(bool Success, string Message, User? User)> InitializeBackoffi
     );
 }
 
+    public async Task<(bool Success, string Message)> RequestEmailChangeAsync(string nic, string newEmail)
+    {
+        var user = await _userRepository.GetByNICAsync(nic);
+        if (user == null) return (false, "User not found.");
+
+        var existingWithEmail = await _userRepository.GetByEmailAsync(newEmail);
+        if (existingWithEmail != null && existingWithEmail.NIC != nic)
+            return (false, "This email is already in use by another account.");
+
+        // Generate OTP
+        var random = new Random();
+        var otp = random.Next(100000, 999999).ToString();
+        
+        user.PendingNewEmail = newEmail;
+        user.ResetPasswordOtp = otp;
+        user.ResetPasswordOtpExpiry = DateTime.UtcNow.AddMinutes(10);
+        
+        await _userRepository.UpdateAsync(user);
+
+        // Send OTP to new email
+        await _emailService.SendOtpEmailAsync(newEmail, otp);
+
+        return (true, "An OTP has been sent to your new email address.");
+    }
+
+    public async Task<(bool Success, string Message)> VerifyEmailChangeAsync(string nic, string otp)
+    {
+        var user = await _userRepository.GetByNICAsync(nic);
+        if (user == null) return (false, "User not found.");
+
+        if (string.IsNullOrEmpty(user.PendingNewEmail) || string.IsNullOrEmpty(user.ResetPasswordOtp))
+            return (false, "No pending email change request found.");
+
+        if (user.ResetPasswordOtp != otp)
+            return (false, "Invalid OTP.");
+
+        if (user.ResetPasswordOtpExpiry < DateTime.UtcNow)
+            return (false, "OTP has expired.");
+
+        user.Email = user.PendingNewEmail;
+        user.EmailVerified = true;
+        
+        // Clear OTP
+        user.PendingNewEmail = null;
+        user.ResetPasswordOtp = null;
+        user.ResetPasswordOtpExpiry = null;
+        user.UpdatedDate = DateTime.UtcNow;
+
+        await _userRepository.UpdateAsync(user);
+
+        return (true, "Email has been updated successfully.");
+    }
 }

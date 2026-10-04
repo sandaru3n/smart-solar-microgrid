@@ -22,8 +22,8 @@ class SessionManager(context: Context) {
         return prefs.getString(USER_TOKEN, null)
     }
 
-    fun saveUserSession(nic: String, name: String, email: String, phone: String, address: String, role: String, accountStatus: String) {
-        dbHelper.saveUser(nic, name, email, phone, address, role, accountStatus)
+    fun saveUserSession(nic: String, name: String, email: String, phone: String, address: String, role: String, accountStatus: String, profilePicUrl: String?) {
+        dbHelper.saveUser(nic, name, email, phone, address, role, accountStatus, profilePicUrl)
     }
 
     fun getUserSession(): User? {

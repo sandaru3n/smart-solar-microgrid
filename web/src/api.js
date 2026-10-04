@@ -17,7 +17,7 @@ export async function request(path, options = {}) {
     headers['Content-Type'] = 'application/json'
   }
   
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
@@ -57,6 +57,8 @@ export async function request(path, options = {}) {
 
 export const authApi = {
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  forgotPassword: (body) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify(body) }),
+  resetPassword: (body) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify(body) }),
 }
 
 export const usersApi = {
@@ -127,4 +129,10 @@ export const reservationsApi = {
       method: 'PATCH',
       body: JSON.stringify(body ?? {}),
     }),
+}
+
+export const deactivationRequestsApi = {
+  getPending: () => request('/deactivation-requests/pending'),
+  approve: (id) => request(`/deactivation-requests/${id}/approve`, { method: 'PATCH' }),
+  reject: (id, reason) => request(`/deactivation-requests/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
 }

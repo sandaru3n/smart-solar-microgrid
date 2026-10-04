@@ -10,5 +10,6 @@ data class User(
     val role: String,
     val accountStatus: String,
     val emailVerified: Boolean? = null,
-    val nicVerificationStatus: String? = null
+    val nicVerificationStatus: String? = null,
+    val profilePicUrl: String? = null
 )

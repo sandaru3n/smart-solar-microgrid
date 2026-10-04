@@ -59,6 +59,7 @@ builder.Services.AddSingleton<UserRepository>();
 builder.Services.AddSingleton<ReservationRepository>();
 builder.Services.AddSingleton<ReservationMonitoringRepository>();
 builder.Services.AddSingleton<PendingRegistrationRepository>();
+builder.Services.AddSingleton<DeactivationRequestRepository>();
 
 // Register services
 builder.Services.AddSingleton(emailSettings);
@@ -67,6 +68,7 @@ builder.Services.AddSingleton<UserService>();
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<StationService>();
 builder.Services.AddSingleton<ReservationService>();
+builder.Services.AddSingleton<DeactivationRequestService>();
 
 // Member 4: booking monitoring and QR verification
 builder.Services.TryAddSingleton(TimeProvider.System);
@@ -93,6 +95,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
 
             ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userService = context.HttpContext.RequestServices.GetRequiredService<UserService>();
+                var nicClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(nicClaim))
+                {
+                    var user = await userService.GetByNICAsync(nicClaim);
+                    if (user == null || user.AccountStatus == AccountStatus.DEACTIVATED)
+                    {
+                        context.Fail("Account is deactivated.");
+                    }
+                }
+            }
         };
     });
 

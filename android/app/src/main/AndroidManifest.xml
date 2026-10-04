@@ -13,6 +13,7 @@
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <application
+        android:name=".SolarGridApp"
         android:enableOnBackInvokedCallback="true"
         android:usesCleartextTraffic="true"
         android:allowBackup="true"
@@ -46,6 +47,8 @@
             android:theme="@style/Theme.SolarGrid" />
 
         <activity android:name=".ui.auth.LoginActivity" android:theme="@style/Theme.SolarGrid" />
+        <activity android:name=".ui.auth.ForgotPasswordActivity" android:theme="@style/Theme.SolarGrid" />
+        <activity android:name=".ui.auth.ResetPasswordActivity" android:theme="@style/Theme.SolarGrid" />
         <activity android:name=".ui.auth.RegisterActivity" android:theme="@style/Theme.SolarGrid" />
         <activity android:name=".ui.auth.OtpVerificationActivity" android:theme="@style/Theme.SolarGrid" />
         <activity android:name=".ui.home.ProsumerHomeActivity" android:theme="@style/Theme.SolarGrid" />
