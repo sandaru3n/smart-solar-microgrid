@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { reservationsApi, stationsApi, usersApi } from '../../../api.js';
-import { formatDateTime, formatLongDate, formatMonth, formatTimeRange, initials } from '../format';
+import { formatDate, formatLongDate, formatMonth, formatTimeRange, initials } from '../format';
 import { useNow, useStationSlots } from '../hooks';
 import { SEVEN_DAYS_MS } from '../reservationRules';
 import { ensureStoredSlot } from '../storedSlot';
@@ -162,9 +162,15 @@ export default function CreateBooking({ onBack, onCreated }) {
         }
         aside={
           <HeaderStat
-            icon="event_available"
+            icon={
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+                <path d="M3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            }
             label="Booking window"
-            value={`Until ${formatDateTime(now + SEVEN_DAYS_MS)}`}
+            value="Next 7 days"
+            hint={`Until ${formatDate(now + SEVEN_DAYS_MS)}`}
           />
         }
       />

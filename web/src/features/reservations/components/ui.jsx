@@ -99,13 +99,16 @@ export function PageHeader({ eyebrow, title, description, onBack, backLabel = 'B
   );
 }
 
-export function HeaderStat({ icon, label, value }) {
+export function HeaderStat({ icon, label, value, hint }) {
   return (
     <div className="rm-header-stat">
-      <Icon name={icon} className="rm-header-stat__icon" />
+      <span className="rm-header-stat__icon">
+        {typeof icon === 'string' ? <Icon name={icon} /> : icon}
+      </span>
       <div>
         <span className="rm-header-stat__label">{label}</span>
         <span className="rm-header-stat__value">{value}</span>
+        {hint && <span className="rm-header-stat__hint">{hint}</span>}
       </div>
     </div>
   );

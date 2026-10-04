@@ -12,7 +12,7 @@ export default function TableSkeleton({ rows = 5, columns = 6, label = 'Loading 
           ))}
         </div>
         {Array.from({ length: rows }, (_, row) => (
-          <div key={row} className="flex items-center gap-6 border-t border-outline-variant/20 px-6 py-4">
+          <div key={row} className="flex items-center gap-6 border-t border-[#FFDD19]/30 bg-[#FFDD19]/15 px-6 py-4">
             {Array.from({ length: columns }, (_, col) => (
               <div
                 key={col}

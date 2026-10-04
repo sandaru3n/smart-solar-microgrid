@@ -21,7 +21,7 @@ export default function StationPicker({ stations, selectedId, onSelect }) {
             onClick={() => onSelect(station.id)}
           >
             <span className="rm-station__top">
-              <span className={`rm-pill ${station.isActive ? 'rm-pill--primary' : 'rm-pill--danger'}`}>
+              <span className={station.isActive ? 'rm-badge rm-badge--approved' : 'rm-pill rm-pill--danger'}>
                 {station.isActive ? 'Active' : 'Inactive'}
               </span>
               {marker}
