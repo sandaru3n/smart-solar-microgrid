@@ -14,7 +14,7 @@ import HomePage from './features/home/HomePage.jsx'
 import ReservationsModule from './features/reservations/ReservationsModule.jsx'
 import SlotLookupPage from './features/stations/components/SlotLookupPage.jsx'
 import CreateStationPage from './features/stations/components/CreateStationPage.jsx'
-import DashboardPage from './features/dashboard/DashboardPage.jsx'
+import { DashboardEntry } from './features/dashboard/OperatorDashboard.jsx'
 import StationsPage from './features/stations/components/StationsPage.jsx'
 import WeeklySchedulePage from './features/stations/components/WeeklySchedulePage.jsx'
 import BookingsLayout from './features/bookings/BookingsLayout.jsx'
@@ -35,13 +35,11 @@ createRoot(document.getElementById('root')).render(
 
           <Route element={<App />}>
             <Route path="/dashboard/stations" element={<StationsPage />} />
+            <Route path="/dashboard" element={<DashboardEntry />} />
             <Route element={<BlockGridOperator />}>
-              <Route path="/dashboard">
-                <Route index element={<DashboardPage />} />
-                <Route path="stations/create" element={<CreateStationPage />} />
-                <Route path="weekly-schedule" element={<WeeklySchedulePage />} />
-                <Route path="slot-lookup" element={<SlotLookupPage />} />
-              </Route>
+              <Route path="/dashboard/stations/create" element={<CreateStationPage />} />
+              <Route path="/dashboard/weekly-schedule" element={<WeeklySchedulePage />} />
+              <Route path="/dashboard/slot-lookup" element={<SlotLookupPage />} />
             </Route>
             <Route path="/reservations/*" element={<ReservationsModule />} />
 

@@ -23,6 +23,7 @@ const getLinks = (role) => {
   if (role === 'GRID_OPERATOR') {
     const reservationIcon = { line: '/reservation-line.png', solid: '/reservation-solid.png' }
     return [
+      { to: '/dashboard', label: 'Dashboard', end: true, icon: { line: '/dashboard-line.png', solid: '/dashboard-solid.png' } },
       { to: '/dashboard/stations', label: 'Stations', end: true, icon: { line: '/stations-line.png', solid: '/stations-solid.png' } },
       {
         to: '/reservations',
@@ -119,7 +120,7 @@ export default function App() {
       <aside className="fixed left-0 top-0 hidden h-full w-60 flex-col justify-between border-r border-[#E7E5E4] bg-white py-6 lg:flex">
         <div className="flex flex-col gap-6">
           <Link
-            to={user?.role === 'BACKOFFICE' ? '/dashboard/users' : user?.role === 'GRID_OPERATOR' ? '/reservations' : '/dashboard/stations'}
+            to={user?.role === 'BACKOFFICE' ? '/dashboard/users' : user?.role === 'GRID_OPERATOR' ? '/dashboard' : '/dashboard/stations'}
             className="flex flex-col items-center gap-2 px-5"
           >
             <span className="flex items-center gap-2.5">

@@ -27,7 +27,7 @@ export default function LoginPage() {
       if (user.role === 'BACKOFFICE') {
         navigate('/dashboard');
       } else if (user.role === 'GRID_OPERATOR') {
-        navigate('/reservations');
+        navigate('/dashboard');
       } else {
         navigate('/dashboard/stations');
       }
