@@ -32,6 +32,7 @@ const getLinks = (role) => {
         match: 'reservations-home',
         icon: reservationIcon,
         children: [
+          { to: '/reservations/all', label: 'All reservations', end: true, nested: true },
           { to: '/reservations/new', label: 'Create reservations', end: true, nested: true },
           { to: '/reservations/pending', label: 'Pending reservations', end: true, nested: true },
         ],
@@ -69,7 +70,8 @@ function isReservationNavActive(link, pathname, routerIsActive) {
     if (pathname === '/reservations') return true
     if (!pathname.startsWith('/reservations/')) return false
     const rest = pathname.slice('/reservations/'.length)
-    return rest !== 'new' && !rest.startsWith('new/') && rest !== 'pending' && !rest.startsWith('pending/')
+    const section = rest.split('/')[0]
+    return section !== 'new' && section !== 'pending' && section !== 'all'
   }
   if (link.to === '/reservations/new') {
     return pathname === '/reservations/new' || pathname.startsWith('/reservations/new/')
@@ -77,10 +79,14 @@ function isReservationNavActive(link, pathname, routerIsActive) {
   if (link.to === '/reservations/pending') {
     return pathname === '/reservations/pending' || pathname.startsWith('/reservations/pending/')
   }
+  if (link.to === '/reservations/all') {
+    return pathname === '/reservations/all' || pathname.startsWith('/reservations/all/')
+  }
   return routerIsActive
 }
 
 function reservationCrumb(pathname) {
+  if (pathname === '/reservations/all' || pathname.startsWith('/reservations/all/')) return 'All reservations'
   if (pathname === '/reservations/new' || pathname.startsWith('/reservations/new/')) return 'Create reservations'
   if (pathname === '/reservations/pending' || pathname.startsWith('/reservations/pending/')) return 'Pending reservations'
   if (pathname === '/reservations' || pathname.startsWith('/reservations/')) return 'Reservations'

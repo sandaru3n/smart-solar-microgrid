@@ -51,6 +51,7 @@ export function matchRoute(pathname, state) {
   if (parts.length === 0) return { name: 'home' };
   if (parts.length === 1 && parts[0] === 'new') return { name: 'create' };
   if (parts.length === 1 && parts[0] === 'pending') return { name: 'pending' };
+  if (parts.length === 1 && parts[0] === 'all') return { name: 'outside' };
 
   const [id, sub] = parts;
 
