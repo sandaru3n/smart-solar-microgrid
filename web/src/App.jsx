@@ -13,7 +13,7 @@ const getLinks = (role) => {
   if (role === 'BACKOFFICE') {
     return [
       ...stationLinks,
-      { to: '/dashboard/users/create-staff', label: 'Create staff', end: true },
+      { to: '/dashboard/users/create-staff', label: 'Create user', end: true },
       { to: '/dashboard/users', label: 'User Management', end: true },
       { to: '/dashboard/users/pending', label: 'Pending Activations', end: true },
       { to: '/bookings', label: 'Bookings', end: false },
@@ -48,7 +48,7 @@ const getLinks = (role) => {
   }
   return [
     ...stationLinks,
-    { to: '/dashboard/users/create-staff', label: 'Create staff', end: true },
+    { to: '/dashboard/users/create-staff', label: 'Create user', end: true },
   ]
 }
 
@@ -60,7 +60,7 @@ const crumbs = {
   '/dashboard/users': 'User Management',
   '/dashboard/users/pending': 'Pending Activations',
   '/dashboard/users/create-prosumer': 'Create Prosumer',
-  '/dashboard/users/create-staff': 'Create Staff',
+  '/dashboard/users/create-staff': 'Create User',
   '/profile': 'My Profile',
 }
 

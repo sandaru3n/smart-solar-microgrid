@@ -222,11 +222,12 @@ public class UserService
         return (false, "Password is required.", null);
     }
 
-    // Only Backoffice and Grid Operator roles can be created as staff.
+    // Backoffice, Grid Operator, and Prosumer roles can be created via this endpoint by a Backoffice user.
     if (user.Role != Role.BACKOFFICE &&
-        user.Role != Role.GRID_OPERATOR)
+        user.Role != Role.GRID_OPERATOR &&
+        user.Role != Role.PROSUMER)
     {
-        return (false, "Invalid staff role.", null);
+        return (false, "Invalid role.", null);
     }
 
     // Hash the password before storing the user.
@@ -643,6 +644,10 @@ public async Task<(bool Success, string Message)> DeleteUserAsync(string nic)
     if (user == null) return (false, "User not found.");
     
     await _userRepository.DeleteAsync(user.NIC);
+
+    await _emailService.SendEmailAsync(user.Email, "Account Deleted", 
+        $"Hello {user.Name},\n\nYour account on Smart Solar Microgrid has been deleted by the administration.\nIf you believe this was a mistake, please contact support.");
+
     return (true, "User deleted successfully.");
 }
 
