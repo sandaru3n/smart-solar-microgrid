@@ -55,6 +55,11 @@ android {
         viewBinding = true
         buildConfig = true
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 dependencies {
@@ -88,6 +93,9 @@ dependencies {
     
     // Cloudinary
     implementation("com.cloudinary:cloudinary-android:2.5.0")
+    
+    // Glide for image loading
+    implementation("com.github.bumptech.glide:glide:4.16.0")
     
     // Fix Guava conflicts from Cloudinary
     implementation("com.google.guava:guava:31.1-android")

@@ -60,6 +60,18 @@ class LoginActivity : AppCompatActivity() {
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val tvRegister = findViewById<TextView>(R.id.tvRegister)
 
+        val cbRememberMe = findViewById<android.widget.CheckBox>(R.id.cbRememberMe)
+        val tvForgotPassword = findViewById<TextView>(R.id.tvForgotPassword)
+
+        val prefs = getSharedPreferences("LoginPrefs", android.content.Context.MODE_PRIVATE)
+        val savedNic = prefs.getString("saved_nic", "")
+        val savedPass = prefs.getString("saved_pass", "")
+        if (savedNic!!.isNotEmpty() && savedPass!!.isNotEmpty()) {
+            etNic.setText(savedNic)
+            etPassword.setText(savedPass)
+            cbRememberMe.isChecked = true
+        }
+
         val sessionManager = SessionManager(this)
 
         btnLogin.setOnClickListener {
@@ -87,6 +99,20 @@ class LoginActivity : AppCompatActivity() {
                             return@launch
                         }
 
+                        if (body.role == "BACKOFFICE") {
+                            Toast.makeText(this@LoginActivity, "Backoffice users must use the Web App.", Toast.LENGTH_LONG).show()
+                            return@launch
+                        }
+
+                        if (cbRememberMe.isChecked) {
+                            prefs.edit()
+                                .putString("saved_nic", nic)
+                                .putString("saved_pass", password)
+                                .apply()
+                        } else {
+                            prefs.edit().clear().apply()
+                        }
+
                         sessionManager.saveAuthToken(body.token)
                         sessionManager.saveUserSession(
                             nic = body.nic,
@@ -95,7 +121,8 @@ class LoginActivity : AppCompatActivity() {
                             phone = "",
                             address = "",
                             role = body.role,
-                            accountStatus = body.accountStatus
+                            accountStatus = body.accountStatus,
+                            profilePicUrl = null // Fetch details again in MainActivity
                         )
 
                         if (body.role == "PROSUMER") {
@@ -104,9 +131,6 @@ class LoginActivity : AppCompatActivity() {
                         } else if (body.role == "GRID_OPERATOR") {
                             startActivity(Intent(this@LoginActivity, GridOperatorHomeActivity::class.java))
                             finish()
-                        } else {
-                            Toast.makeText(this@LoginActivity, "Logged in as ${body.role}", Toast.LENGTH_SHORT).show()
-                            // Route to Grid/Backoffice home here
                         }
                     } else {
                         val errorString = response.errorBody()?.string()
@@ -129,6 +153,11 @@ class LoginActivity : AppCompatActivity() {
 
         tvRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
+        }
+
+        tvForgotPassword.setOnClickListener {
+            // startActivity(Intent(this, ForgotPasswordActivity::class.java))
+            startActivity(Intent(this, ForgotPasswordActivity::class.java))
         }
     }
 

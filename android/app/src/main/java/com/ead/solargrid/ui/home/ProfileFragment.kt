@@ -23,6 +23,13 @@ class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProsumerProfileBinding? = null
     private val binding get() = _binding!!
+    private var currentEditImageView: android.widget.ImageView? = null
+    
+    private val pickImageLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            uploadProfilePic(uri)
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -55,7 +62,8 @@ class ProfileFragment : Fragment() {
                     phone = user.phone.orEmpty(),
                     address = user.address.orEmpty(),
                     role = user.role,
-                    accountStatus = user.accountStatus
+                    accountStatus = user.accountStatus,
+                    profilePicUrl = user.profilePicUrl
                 )
                 showUser(user)
             } catch (_: Exception) {
@@ -80,6 +88,9 @@ class ProfileFragment : Fragment() {
             startActivity(Intent(requireContext(), LoginActivity::class.java))
             requireActivity().finish()
         }
+        dialog.setOnDismissListener {
+            currentEditImageView = null
+        }
         dialog.show()
     }
 
@@ -96,6 +107,17 @@ class ProfileFragment : Fragment() {
         
         binding.btnEditProfile.setOnClickListener {
             showEditProfileDialog(user, session)
+        }
+        
+        // Load profile picture if available
+        user.profilePicUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            val imageView = binding.root.findViewById<android.widget.ImageView>(com.ead.solargrid.R.id.ivProfilePic)
+            if (imageView != null) {
+                com.bumptech.glide.Glide.with(requireContext())
+                    .load(url)
+                    .circleCrop()
+                    .into(imageView)
+            }
         }
 
         binding.btnDeactivate.setOnClickListener {
@@ -126,19 +148,128 @@ class ProfileFragment : Fragment() {
         etPhone.setText(user?.phone)
         etAddress.setText(user?.address)
 
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        val btnChangePic = dialogView.findViewById<android.widget.Button>(com.ead.solargrid.R.id.btnChangePic)
+        val ivEditPic = dialogView.findViewById<android.widget.ImageView>(com.ead.solargrid.R.id.ivEditProfilePic)
+        
+        currentEditImageView = ivEditPic
+        user?.profilePicUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            com.bumptech.glide.Glide.with(requireContext())
+                .load(url)
+                .circleCrop()
+                .into(ivEditPic)
+        }
+
+        btnChangePic.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
+
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
             .setView(dialogView)
             .setPositiveButton("Save") { _, _ ->
+                val newEmail = etEmail.text.toString().trim()
                 val request = com.ead.solargrid.models.UpdateProfileRequest(
-                    name = etName.text.toString().trim(),
-                    email = etEmail.text.toString().trim(),
+                    name = null,
+                    email = null, // Handled separately
                     phone = etPhone.text.toString().trim(),
-                    address = etAddress.text.toString().trim()
+                    address = etAddress.text.toString().trim(),
+                    profilePicUrl = null
                 )
-                updateProfile(user?.nic, request, session)
+                
+                if (newEmail.isNotEmpty() && newEmail != user?.email) {
+                    initiateEmailChange(user?.nic, newEmail, request, session)
+                } else {
+                    updateProfile(user?.nic, request, session)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnDismissListener {
+            currentEditImageView = null
+        }
+        dialog.show()
+    }
+
+    private fun initiateEmailChange(nic: String?, newEmail: String, pendingRequest: com.ead.solargrid.models.UpdateProfileRequest, session: SessionManager) {
+        if (nic == null) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val api = ApiClient.getApiService(requireContext())
+                val response = api.requestEmailChange(nic, com.ead.solargrid.models.EmailChangeRequest(newEmail))
+                if (response.isSuccessful) {
+                    showEmailOtpDialog(nic, pendingRequest, session)
+                } else {
+                    val err = response.errorBody()?.string() ?: "Failed to request email change"
+                    android.widget.Toast.makeText(requireContext(), err, android.widget.Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(requireContext(), "Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showEmailOtpDialog(nic: String, pendingRequest: com.ead.solargrid.models.UpdateProfileRequest, session: SessionManager) {
+        val input = com.google.android.material.textfield.TextInputEditText(requireContext())
+        input.hint = "Enter OTP sent to new email"
+        input.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        val layout = android.widget.FrameLayout(requireContext())
+        layout.setPadding(60, 40, 60, 0)
+        layout.addView(input)
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Verify New Email")
+            .setMessage("Please enter the OTP sent to your new email address.")
+            .setView(layout)
+            .setPositiveButton("Verify") { _, _ ->
+                val otp = input.text.toString().trim()
+                verifyEmailChangeAndSave(nic, otp, pendingRequest, session)
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun verifyEmailChangeAndSave(nic: String, otp: String, pendingRequest: com.ead.solargrid.models.UpdateProfileRequest, session: SessionManager) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val api = ApiClient.getApiService(requireContext())
+                val response = api.verifyEmailChange(nic, com.ead.solargrid.models.EmailVerifyRequest(otp))
+                if (response.isSuccessful) {
+                    android.widget.Toast.makeText(requireContext(), "Email verified successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                    updateProfile(nic, pendingRequest, session)
+                } else {
+                    val err = response.errorBody()?.string() ?: "Invalid OTP"
+                    android.widget.Toast.makeText(requireContext(), err, android.widget.Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(requireContext(), "Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    private var isUploading = false
+    private fun uploadProfilePic(uri: android.net.Uri) {
+        if (isUploading) return
+        isUploading = true
+        val nic = SessionManager(requireContext()).getUserSession()?.nic ?: return
+        
+        android.widget.Toast.makeText(requireContext(), "Uploading Profile Picture...", android.widget.Toast.LENGTH_SHORT).show()
+        
+        com.cloudinary.android.MediaManager.get().upload(uri).callback(object : com.cloudinary.android.callback.UploadCallback {
+            override fun onStart(requestId: String) {}
+            override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
+            override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                val secureUrl = resultData["secure_url"] as String
+                updateProfile(nic, com.ead.solargrid.models.UpdateProfileRequest(null, null, null, null, secureUrl), SessionManager(requireContext()))
+                isUploading = false
+            }
+            override fun onError(requestId: String, error: com.cloudinary.android.callback.ErrorInfo) {
+                activity?.runOnUiThread {
+                    android.widget.Toast.makeText(requireContext(), "Upload failed: ${error.description}", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                isUploading = false
+            }
+            override fun onReschedule(requestId: String, error: com.cloudinary.android.callback.ErrorInfo) {}
+        }).dispatch()
     }
 
     private fun updateProfile(nic: String?, request: com.ead.solargrid.models.UpdateProfileRequest, session: SessionManager) {
@@ -156,9 +287,21 @@ class ProfileFragment : Fragment() {
                             phone = updatedUser.phone.orEmpty(),
                             address = updatedUser.address.orEmpty(),
                             role = updatedUser.role,
-                            accountStatus = updatedUser.accountStatus
+                            accountStatus = updatedUser.accountStatus,
+                            profilePicUrl = updatedUser.profilePicUrl
                         )
                         showUser(updatedUser)
+                        
+                        // Also update the dialog image if it's open
+                        currentEditImageView?.let { iv ->
+                            updatedUser.profilePicUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+                                com.bumptech.glide.Glide.with(requireContext())
+                                    .load(url)
+                                    .circleCrop()
+                                    .into(iv)
+                            }
+                        }
+
                         android.widget.Toast.makeText(requireContext(), "Profile Updated", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 } else {
@@ -172,25 +315,46 @@ class ProfileFragment : Fragment() {
 
     private fun requestDeactivation(nic: String?) {
         if (nic == null) return
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        
+        val input = android.widget.EditText(requireContext())
+        input.hint = "Reason for deactivation (min 10 chars)"
+        val lp = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        input.layoutParams = lp
+        
+        val container = android.widget.LinearLayout(requireContext())
+        container.setPadding(50, 20, 50, 0)
+        container.addView(input)
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
             .setTitle("Request Deactivation")
             .setMessage("Are you sure you want to deactivate your account? This action requires backoffice approval.")
-            .setPositiveButton("Yes") { _, _ ->
+            .setView(container)
+            .setPositiveButton("Submit") { _, _ ->
+                val reason = input.text.toString()
+                if (reason.length < 10) {
+                    android.widget.Toast.makeText(requireContext(), "Reason must be at least 10 characters.", android.widget.Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                
                 viewLifecycleOwner.lifecycleScope.launch {
                     try {
-                        val response = ApiClient.getApiService(requireContext()).requestDeactivation(nic)
+                        val body = com.ead.solargrid.models.CreateDeactivationRequest(reason)
+                        val response = ApiClient.getApiService(requireContext()).requestDeactivation(nic, body)
                         if (response.isSuccessful && _binding != null) {
                             android.widget.Toast.makeText(requireContext(), "Deactivation Requested", android.widget.Toast.LENGTH_SHORT).show()
-                            binding.tvProfileStatus.text = pretty("DEACTIVATION_REQUESTED")
+                            binding.tvProfileStatus.text = pretty("PENDING_DEACTIVATION")
                         } else {
-                            android.widget.Toast.makeText(requireContext(), "Request Failed", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(requireContext(), "Request Failed: Already pending?", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     } catch (e: Exception) {
                         android.widget.Toast.makeText(requireContext(), "Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
             }
-            .setNegativeButton("No", null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 

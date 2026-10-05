@@ -4,6 +4,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext'
 import { BlockGridOperator, HomeRedirect, ProtectedRoute } from './auth/ProtectedRoute'
 import LoginPage from './auth/LoginPage'
+import ForgotPasswordPage from './auth/ForgotPasswordPage'
+import ResetPasswordPage from './auth/ResetPasswordPage'
 import UserManagementPage from './features/users/UserManagementPage'
 import PendingUsersPage from './features/users/PendingUsersPage'
 import CreateProsumerPage from './features/users/CreateProsumerPage'
@@ -12,6 +14,7 @@ import ProfilePage from './features/users/ProfilePage'
 import App from './App.jsx'
 import HomePage from './features/home/HomePage.jsx'
 import ReservationsModule from './features/reservations/ReservationsModule.jsx'
+import ReservationsAllPage from './features/reservations/components/AllReservationsPage.jsx'
 import SlotLookupPage from './features/stations/components/SlotLookupPage.jsx'
 import CreateStationPage from './features/stations/components/CreateStationPage.jsx'
 import { DashboardEntry } from './features/dashboard/OperatorDashboard.jsx'
@@ -32,6 +35,8 @@ createRoot(document.getElementById('root')).render(
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           <Route element={<App />}>
             <Route path="/dashboard/stations" element={<StationsPage />} />
@@ -40,6 +45,9 @@ createRoot(document.getElementById('root')).render(
               <Route path="/dashboard/stations/create" element={<CreateStationPage />} />
               <Route path="/dashboard/weekly-schedule" element={<WeeklySchedulePage />} />
               <Route path="/dashboard/slot-lookup" element={<SlotLookupPage />} />
+            </Route>
+            <Route element={<ProtectedRoute roles={BOOKINGS_ROLES} />}>
+              <Route path="/reservations/all" element={<ReservationsAllPage />} />
             </Route>
             <Route path="/reservations/*" element={<ReservationsModule />} />
 

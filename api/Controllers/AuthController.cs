@@ -46,7 +46,7 @@ public class AuthController : ControllerBase
 
 
 [HttpPost("register/start")]
-public async Task<IActionResult> StartRegistration([FromForm] RegisterStartRequest request)
+public async Task<IActionResult> StartRegistration([FromBody] RegisterStartRequest request)
 {
     if (!ModelState.IsValid)
     {
@@ -105,5 +105,40 @@ public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
 
     return Ok(new { message = result.Message });
 }
-    
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var result = await _userService.ForgotPasswordAsync(request.Email);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { message = result.Message });
+        }
+
+        return Ok(new { message = result.Message });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var result = await _userService.ResetPasswordAsync(request.Email, request.Otp, request.NewPassword);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { message = result.Message });
+        }
+
+        return Ok(new { message = result.Message });
+    }
 }

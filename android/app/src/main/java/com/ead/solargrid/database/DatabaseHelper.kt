@@ -9,7 +9,7 @@ import com.ead.solargrid.models.User
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
         private const val DATABASE_NAME = "SolarGridSession.db"
         
         private const val TABLE_USER = "session_user"
@@ -20,6 +20,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val COLUMN_ADDRESS = "address"
         private const val COLUMN_ROLE = "role"
         private const val COLUMN_STATUS = "account_status"
+        private const val COLUMN_PROFILE_PIC = "profile_pic"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -30,7 +31,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + COLUMN_PHONE + " TEXT,"
                 + COLUMN_ADDRESS + " TEXT,"
                 + COLUMN_ROLE + " TEXT,"
-                + COLUMN_STATUS + " TEXT" + ")")
+                + COLUMN_STATUS + " TEXT,"
+                + COLUMN_PROFILE_PIC + " TEXT" + ")")
         db.execSQL(createTable)
     }
 
@@ -39,7 +41,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         onCreate(db)
     }
 
-    fun saveUser(nic: String, name: String, email: String, phone: String, address: String, role: String, accountStatus: String) {
+    fun saveUser(nic: String, name: String, email: String, phone: String, address: String, role: String, accountStatus: String, profilePicUrl: String?) {
         val db = this.writableDatabase
         db.delete(TABLE_USER, null, null) // Keep only one session
         
@@ -51,6 +53,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         values.put(COLUMN_ADDRESS, address)
         values.put(COLUMN_ROLE, role)
         values.put(COLUMN_STATUS, accountStatus)
+        values.put(COLUMN_PROFILE_PIC, profilePicUrl)
 
         db.insert(TABLE_USER, null, values)
         db.close()
@@ -73,7 +76,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 phone = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE)),
                 address = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ADDRESS)),
                 role = roleStr,
-                accountStatus = "ACTIVE"
+                accountStatus = "ACTIVE",
+                profilePicUrl = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROFILE_PIC))
             )
         }
         cursor.close()

@@ -10,6 +10,16 @@
         <item name="android:statusBarColor">@color/solarix_header</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="materialAlertDialogTheme">@style/Theme.SolarGrid.AlertDialog</item>
+    </style>
+
+    <style name="Theme.SolarGrid.AlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.SolarGrid.Dialog</item>
+    </style>
+
+    <style name="ShapeAppearance.SolarGrid.Dialog" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24dp</item>
     </style>
 
     <!-- Plain yellow window only — do not use Theme.SplashScreen animated icon (forces monochrome icon). -->

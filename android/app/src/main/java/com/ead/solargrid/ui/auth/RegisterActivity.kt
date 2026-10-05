@@ -95,6 +95,12 @@ class RegisterActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            val pwdRegex = Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,15}$")
+            if (!pwdRegex.matches(password)) {
+                Toast.makeText(this, "Password must be 8-15 characters long, contain at least one uppercase letter, one lowercase letter, and one number.", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
             val nicRegex = "^(?:[0-9]{9}[VvXx]|[0-9]{12})$"
             if (!Pattern.matches(nicRegex, nic)) {
                 Toast.makeText(this, "Invalid Sri Lankan NIC format", Toast.LENGTH_SHORT).show()
@@ -145,16 +151,6 @@ class RegisterActivity : AppCompatActivity() {
         btnRegister.isEnabled = false
         btnRegister.text = "Uploading Document..."
         Toast.makeText(this, "Uploading NIC to Cloudinary...", Toast.LENGTH_SHORT).show()
-
-        try {
-            com.cloudinary.android.MediaManager.init(this, mapOf(
-                "cloud_name" to com.ead.solargrid.BuildConfig.CLOUDINARY_CLOUD_NAME,
-                "api_key" to com.ead.solargrid.BuildConfig.CLOUDINARY_API_KEY,
-                "api_secret" to com.ead.solargrid.BuildConfig.CLOUDINARY_API_SECRET
-            ))
-        } catch (e: Exception) {
-            // Already initialized
-        }
 
         com.cloudinary.android.MediaManager.get().upload(selectedFileUri!!)
             .callback(object : com.cloudinary.android.callback.UploadCallback {

@@ -11,6 +11,7 @@ public class UserResponse
     public string AccountStatus { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; }
     public DateTime UpdatedDate { get; set; }
+    public string? ProfilePicUrl { get; set; }
 
     public static UserResponse FromUser(User user)
     {
@@ -24,7 +25,8 @@ public class UserResponse
             Role = user.Role.ToString(),
             AccountStatus = user.AccountStatus.ToString(),
             CreatedDate = user.CreatedDate,
-            UpdatedDate = user.UpdatedDate
+            UpdatedDate = user.UpdatedDate,
+            ProfilePicUrl = user.ProfilePicUrl
         };
     }
 }

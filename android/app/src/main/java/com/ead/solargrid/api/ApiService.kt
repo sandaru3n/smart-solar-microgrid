@@ -19,6 +19,12 @@ interface ApiService {
     @POST("api/auth/register/resend-otp")
     suspend fun resendOtp(@Body request: ResendOtpRequest): Response<BaseResponse>
 
+    @POST("api/auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<BaseResponse>
+
+    @POST("api/auth/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<BaseResponse>
+
     @GET("api/users/{nic}")
     suspend fun getUser(@Path("nic") nic: String): Response<User>
 
@@ -28,8 +34,23 @@ interface ApiService {
         @Body request: UpdateProfileRequest
     ): Response<User>
 
-    @PATCH("api/users/{nic}/deactivation-request")
-    suspend fun requestDeactivation(@Path("nic") nic: String): Response<BaseResponse>
+    @POST("api/users/{nic}/request-email-change")
+    suspend fun requestEmailChange(
+        @Path("nic") nic: String,
+        @Body request: EmailChangeRequest
+    ): Response<BaseResponse>
+
+    @POST("api/users/{nic}/verify-email-change")
+    suspend fun verifyEmailChange(
+        @Path("nic") nic: String,
+        @Body request: EmailVerifyRequest
+    ): Response<BaseResponse>
+
+    @POST("api/deactivation-requests/users/{nic}")
+    suspend fun requestDeactivation(
+        @Path("nic") nic: String,
+        @Body body: CreateDeactivationRequest
+    ): Response<BaseResponse>
 
     @GET("api/reservations/summary")
     suspend fun getReservationSummary(): Response<ReservationSummaryResponse>
