@@ -1,3 +1,10 @@
+/**
+ * File: ReservationUi.kt
+ * Purpose: Formats reservation rows and status chips on the prosumer bookings screen.
+ * Author: M.T.C PEIRIS  it23201200
+ * Date: 2026
+ */
+
 package com.ead.solargrid.ui.home
 
 import android.graphics.Color
@@ -15,6 +22,7 @@ import java.util.Locale
 
 object ReservationUi {
 
+    // Formats a slot as a Sri Lanka date and time range.
     fun formatSlotRange(startUtc: String?, endUtc: String?): String {
         if (startUtc.isNullOrBlank()) return "Slot time unavailable"
         return try {
@@ -35,11 +43,13 @@ object ReservationUi {
         }
     }
 
+    // Formats one instant in Sri Lanka time.
     /** e.g. "Tue, Sep 29 · 09:30 AM", in the same zone as [formatSlotRange]. */
     fun formatDateTime(instant: Instant): String =
         instant.atZone(ZoneId.of("Asia/Colombo"))
             .format(DateTimeFormatter.ofPattern("EEE, MMM d · hh:mm a", Locale.getDefault()))
 
+    // Adds a compact booking row to a list.
     /**
      * @param onClick when set, the row is tappable and shows a "Show QR" hint.
      * @param statusLabel replaces the raw status on the chip, e.g. "In progress".
@@ -66,6 +76,7 @@ object ReservationUi {
         parent.addView(row)
     }
 
+    // Adds a pending or approved booking card to the bookings list.
     fun addPendingBookingCard(
         parent: LinearLayout,
         inflater: LayoutInflater,
@@ -89,6 +100,7 @@ object ReservationUi {
         parent.addView(card.root)
     }
 
+    // Colours the status chip for the reservation status.
     private fun applyStatusChip(card: ItemPendingBookingCardBinding, status: String) {
         val key = status.trim().lowercase(Locale.getDefault())
         val label: Int
@@ -127,6 +139,7 @@ object ReservationUi {
         card.tvCardStatus.setTextColor(color)
     }
 
+    // Builds the two-letter initials shown on a booking card.
     private fun initials(name: String): String {
         val parts = name.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
         return when {

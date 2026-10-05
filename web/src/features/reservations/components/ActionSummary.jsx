@@ -1,3 +1,6 @@
+// ActionSummary.jsx — Summary screen shown after a booking is created, changed or cancelled.
+// Author: M.T.C PEIRIS  it23201200
+
 import { formatDateTime, formatLongDate, formatTimeRange } from '../format';
 import {
   DetailList,
@@ -32,6 +35,7 @@ const ACTIONS = {
   },
 };
 
+// Shows the result of create, update or cancel and the saved booking details.
 export default function ActionSummary({
   action,
   summary,

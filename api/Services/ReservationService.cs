@@ -1,3 +1,10 @@
+/**
+ * File: ReservationService.cs
+ * Purpose: Booking operations, the seven-day rule, the 12-hour rule, capacity checks and conflict checks.
+ * Author: M.T.C PEIRIS  it23201200
+ * Date: 2026
+ */
+
 using System.Security.Claims;
 using MongoDB.Driver;
 using SolarGrid.Api.Models;
@@ -13,6 +20,7 @@ public class ReservationService
     private readonly ReservationRepository _reservations;
     private readonly UserRepository _users;
 
+    // Stores the reservation and user repositories.
     public ReservationService(
         ReservationRepository reservations,
         UserRepository users)
@@ -21,6 +29,7 @@ public class ReservationService
         _users = users;
     }
 
+    // Loads one reservation and its slot for the summary screen.
     public async Task<object> GetByIdAsync(string id, ClaimsPrincipal actor)
     {
         var reservation = await LoadAccessibleAsync(id, actor);
@@ -28,6 +37,7 @@ public class ReservationService
         return BuildSummary(reservation, slot, "Reservation details retrieved.");
     }
 
+    // Creates a booking through the unsigned web desk using Backoffice rules.
     public Task<object> CreateFromDeskAsync(
         string slotId,
         string? stationId,
@@ -36,6 +46,7 @@ public class ReservationService
         return CreateAsync(DeskActor.Create(), slotId, stationId, prosumerId);
     }
 
+    // Creates a reservation, reserves one slot space, and returns the booking summary.
     public async Task<object> CreateAsync(
         ClaimsPrincipal actor,
         string slotId,
@@ -105,6 +116,7 @@ public class ReservationService
         }
     }
 
+    // Moves an eligible reservation to a new slot and returns the updated summary.
     public async Task<object> UpdateAsync(
         string id,
         ClaimsPrincipal actor,
@@ -215,6 +227,7 @@ public class ReservationService
         }
     }
 
+    // Cancels an eligible reservation, releases its slot space, and returns the summary.
     public async Task<object> CancelAsync(
         string id,
         ClaimsPrincipal actor,
@@ -298,6 +311,7 @@ public class ReservationService
         }
     }
 
+    // Loads a reservation and rejects the call when this user cannot open it.
     private async Task<EnergyReservation> LoadAccessibleAsync(string id, ClaimsPrincipal actor)
     {
         RequireAuth(actor);
@@ -309,6 +323,7 @@ public class ReservationService
         return reservation;
     }
 
+    // Reads the signed-in NIC and role, or rejects a missing session.
     private static (string Nic, Role Role) RequireAuth(ClaimsPrincipal actor)
     {
         var nic = actor.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -331,6 +346,7 @@ public class ReservationService
         return (nic, role);
     }
 
+    // Uses the signed-in prosumer, or the prosumer chosen by staff.
     private async Task<string> ResolveProsumerIdAsync(
         ClaimsPrincipal actor,
         Role role,
@@ -368,6 +384,7 @@ public class ReservationService
             "You are not permitted to create reservations.");
     }
 
+    // Rejects the booking when the prosumer account is not active.
     private async Task EnsureProsumerActiveAsync(string prosumerId)
     {
         var user = await _users.GetByNICAsync(prosumerId)
@@ -390,6 +407,7 @@ public class ReservationService
         }
     }
 
+    // Allows the owner, Backoffice and Grid Operator to open the reservation.
     private static void EnsureCanAccess(ClaimsPrincipal actor, EnergyReservation reservation)
     {
         var (nic, role) = RequireAuth(actor);
@@ -410,6 +428,7 @@ public class ReservationService
             "You are not permitted to access this reservation.");
     }
 
+    // Allows changes only while the reservation is Pending or Approved.
     private static void EnsureMutable(EnergyReservation reservation)
     {
         if (reservation.Status is ReservationStatus.Cancelled
@@ -422,6 +441,7 @@ public class ReservationService
         }
     }
 
+    // Loads the chosen slot and rejects a missing or inactive slot.
     private async Task<EnergyBookingSlot> LoadActiveSlotAsync(
         string slotId,
         IClientSessionHandle? session = null)
@@ -448,6 +468,7 @@ public class ReservationService
         return slot;
     }
 
+    // Loads the station and rejects a missing or inactive station.
     private async Task<SolarStation> LoadActiveStationAsync(
         string stationId,
         IClientSessionHandle? session = null)
@@ -467,6 +488,7 @@ public class ReservationService
         return station;
     }
 
+    // Rejects the booking when the slot does not belong to the selected station.
     private static void EnsureStationMatches(EnergyBookingSlot slot, string? stationId)
     {
         if (!string.IsNullOrWhiteSpace(stationId) &&
@@ -478,6 +500,7 @@ public class ReservationService
         }
     }
 
+    // Rejects a slot that falls outside the station's open hours.
     private async Task EnsureWithinOperatingScheduleAsync(
         string stationId,
         EnergyBookingSlot slot,
@@ -514,6 +537,7 @@ public class ReservationService
         }
     }
 
+    // Allows a new slot only when it starts within the next seven days.
     private static void EnsureWithinSevenDays(DateTime slotStartUtc, DateTime nowUtc)
     {
         // Rolling window: now < start <= now + 7 days
@@ -532,6 +556,7 @@ public class ReservationService
         }
     }
 
+    // Blocks a change or cancellation inside the 12-hour notice window.
     private static void EnsureAtLeastTwelveHours(DateTime slotStartUtc, DateTime nowUtc)
     {
         if (slotStartUtc - nowUtc < MinLeadTime)
@@ -542,6 +567,7 @@ public class ReservationService
         }
     }
 
+    // Rejects a duplicate slot booking and any overlapping active booking.
     private async Task EnsureNoConflictAsync(
         IClientSessionHandle session,
         string prosumerId,
@@ -579,6 +605,7 @@ public class ReservationService
 
     private static readonly TimeZoneInfo SriLankaZone = ResolveSriLankaZone();
 
+    // Resolves the Sri Lanka time zone used for station opening hours.
     private static TimeZoneInfo ResolveSriLankaZone()
     {
         foreach (var id in new[] { "Asia/Colombo", "Sri Lanka Standard Time" })
@@ -602,6 +629,7 @@ public class ReservationService
             "Sri Lanka");
     }
 
+    // Converts a UTC slot time to Sri Lanka local time.
     private static DateTime ToSriLanka(DateTime value)
     {
         var utc = value.Kind == DateTimeKind.Utc
@@ -611,6 +639,7 @@ public class ReservationService
         return TimeZoneInfo.ConvertTimeFromUtc(utc, SriLankaZone);
     }
 
+    // Builds the booking summary returned after create, update, cancel and details.
     private static object BuildSummary(
         EnergyReservation reservation,
         EnergyBookingSlot? slot,
@@ -642,6 +671,7 @@ public class ReservationService
         };
     }
 
+    // Aborts the MongoDB transaction when the booking cannot be saved.
     private static async Task SafeAbortAsync(IClientSessionHandle session)
     {
         try

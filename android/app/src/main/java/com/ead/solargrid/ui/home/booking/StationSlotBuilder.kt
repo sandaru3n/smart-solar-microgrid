@@ -1,3 +1,10 @@
+/**
+ * File: StationSlotBuilder.kt
+ * Purpose: Builds the bookable days and slots for the Android create and edit flow.
+ * Author: M.T.C PEIRIS  it23201200
+ * Date: 2026
+ */
+
 package com.ead.solargrid.ui.home.booking
 
 import com.ead.solargrid.api.ApiService
@@ -31,6 +38,7 @@ object StationSlotBuilder {
         val closed: Boolean
     )
 
+    // Counts open slots for each day in the booking window.
     suspend fun summarizeUpcomingDays(
         api: ApiService,
         stationId: String,
@@ -95,8 +103,10 @@ object StationSlotBuilder {
         }
     }
 
+    // Shortens a clock time to hours and minutes.
     private fun clock(value: String): String = if (value.length >= 5) value.take(5) else value
 
+    // Loads schedules and slots the prosumer can choose.
     suspend fun loadSelectableSlots(api: ApiService, stationId: String): SlotLoadResult {
         val stationResp = api.getStation(stationId)
         val station = stationResp.body() ?: throw IllegalStateException("Station not found")
@@ -186,6 +196,7 @@ object StationSlotBuilder {
         return SlotLoadResult(slots, schedules)
     }
 
+    // Saves a generated slot and returns the id used to create the booking.
     suspend fun ensureStoredSlotId(api: ApiService, stationId: String, slot: EnergyBookingSlotDto): String {
         if (slot.id.matches(Regex("^[a-fA-F\\d]{24}$"))) return slot.id
         val created = api.createBookingSlot(
@@ -202,11 +213,13 @@ object StationSlotBuilder {
         return created.body()?.id ?: throw IllegalStateException("Slot created without id")
     }
 
+    // Lists the local booking days starting from today.
     private fun localDays(count: Int): List<LocalDate> {
         val start = LocalDate.now()
         return (0 until count).map { start.plusDays(it.toLong()) }
     }
 
+    // Returns the UTC dates needed to load those local days.
     private fun utcDatesCovering(days: List<LocalDate>): List<String> {
         if (days.isEmpty()) return emptyList()
         val zone = ZoneId.systemDefault()
@@ -224,17 +237,21 @@ object StationSlotBuilder {
         return dates.distinct()
     }
 
+    // Returns the Sri Lanka date key for a UTC slot time.
     fun dayKey(isoUtc: String): String {
         val instant = BookingRules.parseInstant(isoUtc) ?: return ""
         val local = instant.atZone(ZoneId.systemDefault()).toLocalDate()
         return local.toString()
     }
 
+    // Returns the date key for a local booking day.
     fun dayKey(date: LocalDate): String = date.toString()
 
+    // Returns the weekday name shown on a day chip.
     fun weekdayName(date: LocalDate): String =
         date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.US)
 
+    // Combines a booking day with an opening or closing time.
     private fun localDateTime(day: LocalDate, timeText: String): LocalDateTime {
         val parts = timeText.split(":").map { it.toIntOrNull() ?: 0 }
         val hour = parts.getOrElse(0) { 0 }
@@ -243,6 +260,7 @@ object StationSlotBuilder {
         return day.atTime(hour, minute, second)
     }
 
+    // Splits an opening period into one-hour booking slots.
     private fun hourlyWindows(start: LocalDateTime, end: LocalDateTime): List<Pair<LocalDateTime, LocalDateTime>> {
         val windows = mutableListOf<Pair<LocalDateTime, LocalDateTime>>()
         var cursor = start.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
