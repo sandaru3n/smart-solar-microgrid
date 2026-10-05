@@ -28,6 +28,8 @@ public class ReservationMonitoringService
     private readonly IQrTokenService _qr;
     private readonly QrOptions _qrOptions;
     private readonly TimeProvider _time;
+    private readonly IEmailService _email;
+    private readonly ILogger<ReservationMonitoringService> _logger;
 
     public ReservationMonitoringService(
         ReservationRepository reservations,
@@ -35,7 +37,9 @@ public class ReservationMonitoringService
         UserRepository users,
         IQrTokenService qr,
         QrOptions qrOptions,
-        TimeProvider time)
+        TimeProvider time,
+        IEmailService email,
+        ILogger<ReservationMonitoringService> logger)
     {
         _reservations = reservations;
         _monitoring = monitoring;
@@ -43,6 +47,8 @@ public class ReservationMonitoringService
         _qr = qr;
         _qrOptions = qrOptions;
         _time = time;
+        _email = email;
+        _logger = logger;
     }
 
     private DateTime UtcNow => _time.GetUtcNow().UtcDateTime;
@@ -247,6 +253,11 @@ public class ReservationMonitoringService
 
             var station = await _reservations.GetStationByIdAsync(updated.StationId);
 
+            if (action is ReservationAction.Approve or ReservationAction.Reject)
+            {
+                await NotifyProsumerAsync(action == ReservationAction.Approve, updated, slot, station);
+            }
+
             return new ReservationActionResponse
             {
                 Message = action switch
@@ -269,6 +280,38 @@ public class ReservationMonitoringService
         {
             await SafeAbortAsync(session);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Emails the prosumer about an approval decision. Runs after the commit and
+    /// never throws: the decision is already saved, so a mail problem must not
+    /// turn a successful approve/reject into an error.
+    /// </summary>
+    private async Task NotifyProsumerAsync(
+        bool approved,
+        EnergyReservation reservation,
+        EnergyBookingSlot slot,
+        SolarStation? station)
+    {
+        try
+        {
+            var prosumer = await _users.GetByNICAsync(reservation.ProsumerId);
+            if (prosumer is null || string.IsNullOrWhiteSpace(prosumer.Email))
+            {
+                _logger.LogWarning(
+                    "No email address for prosumer {ProsumerId}; skipped booking decision email for {ReservationId}.",
+                    reservation.ProsumerId,
+                    reservation.Id);
+                return;
+            }
+
+            var email = ReservationEmailTemplates.BuildDecision(approved, prosumer.Name, reservation, slot, station);
+            await _email.SendEmailAsync(prosumer.Email, email.Subject, email.TextBody, email.HtmlBody);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not send booking decision email for {ReservationId}.", reservation.Id);
         }
     }
 
