@@ -51,6 +51,9 @@ import kotlin.math.sqrt
  * a [SupportMapFragment] hosted in the child fragment manager, with the map
  * delivered through [OnMapReadyCallback]. Lifecycle is handled automatically
  * by the fragment (no manual MapView lifecycle forwarding needed).
+ *
+ * Author: M.S.N. Peiris it23201132
+ * Date: 2026
  */
 class StationsMapFragment : Fragment(), OnMapReadyCallback {
 
@@ -60,10 +63,13 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
     private var googleMap: GoogleMap? = null
     private var userLocation: LatLng? = null
     private var selected: SolarStation? = null
+    // Prevents suggestion dropdown from reopening while we fill the search box.
     private var applyingSuggestion = false
     private var sheetShown = false
+    // Stations sorted nearest-first for swipe left/right on the bottom sheet.
     private var nearbyOrder: List<SolarStation> = emptyList()
     private var scheduleExpanded = false
+    // TranslationY that keeps the schedule peek hidden while showing station details.
     private var collapsedOffset = 0
     private var scheduleLoadedFor: String? = null
     private var entranceRunning = false
@@ -73,6 +79,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
     private var stationIcon: BitmapDescriptor? = null
     private val markers = mutableListOf<Pair<Marker, SolarStation>>()
 
+    // Runtime location permission callback — enables my-location when the user grants access.
     private val locationPermission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
@@ -94,6 +101,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // Warn if the Maps API key is missing from the app manifest.
         if (manifestMapsKey().isBlank()) {
             binding.tvMapKeyMissing.visibility = View.VISIBLE
         }
@@ -103,6 +111,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         binding.btnUseLocation.setOnClickListener { requestLocation() }
         binding.btnMyLocation.setOnClickListener { requestLocation() }
         enableSheetGestures()
+        // Live search filters markers and shows name/address suggestions.
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
@@ -124,17 +133,20 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
     }
 
     override fun onMapReady(map: GoogleMap) {
+        // View may already be destroyed if the callback arrives late.
         if (_binding == null) return
         googleMap = map
         map.mapType = GoogleMap.MAP_TYPE_NORMAL
         map.uiSettings.isZoomControlsEnabled = true
         map.uiSettings.isMapToolbarEnabled = false
+        // Marker tap opens the station bottom sheet; map tap clears search suggestions.
         map.setOnMarkerClickListener { marker ->
             (marker.tag as? SolarStation)?.let { showStation(it) }
             hideSuggestions()
             false
         }
         map.setOnMapClickListener { hideSuggestions() }
+        // Default camera centres on Colombo until GPS is available.
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(COLOMBO, 12f))
         if (hasLocationPermission()) {
             enableMyLocation()
@@ -143,6 +155,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
     }
 
     override fun onDestroyView() {
+        // Clear map references so nothing holds the destroyed view.
         markers.clear()
         googleMap = null
         stationIcon = null
@@ -157,6 +170,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         super.onDestroyView()
     }
 
+    /** Reads the Google Maps API key from the application meta-data. */
     private fun manifestMapsKey(): String {
         val context = context ?: return ""
         return try {
@@ -170,6 +184,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Requests location permission if needed, otherwise turns on my-location. */
     private fun requestLocation() {
         if (hasLocationPermission()) {
             enableMyLocation()
@@ -191,6 +206,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
             PackageManager.PERMISSION_GRANTED
     }
 
+    /** Enables the blue my-location dot and recentres the camera on the last known GPS fix. */
     private fun enableMyLocation() {
         val map = googleMap ?: return
         if (!hasLocationPermission()) return
@@ -205,17 +221,24 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
             userLocation = LatLng(location.latitude, location.longitude)
             binding.locationBanner.visibility = View.GONE
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(userLocation!!, 13f))
+            // Refresh distance text for the currently selected station.
             selected?.let { showStation(it) }
+            // Reload so nearby stations are ordered from the user's position.
             loadStations()
         }
     }
 
+    /**
+     * Loads stations from the API.
+     * Prefers /stations/nearby when GPS is known; falls back to the full active list.
+     */
     private fun loadStations() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val api = ApiClient.getApiService(requireContext())
                 val here = userLocation
                 val stations = if (here != null) {
+                    // 50 km nearby search; if empty, show all active stations instead.
                     val nearby = api.getNearbyStations(here.latitude, here.longitude, 50.0).body().orEmpty()
                     if (nearby.isNotEmpty()) {
                         nearby.map { it.station }
@@ -236,6 +259,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Places custom markers for each station and focuses the nearest one. */
     private fun drawMarkers(stations: List<SolarStation>) {
         val map = googleMap ?: return
         markers.forEach { it.first.remove() }
@@ -248,6 +272,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
                     .anchor(0.5f, 0.5f)
                     .icon(stationMarkerIcon())
             ) ?: return@forEach
+            // Tag keeps the SolarStation model attached to the marker click.
             marker.tag = station
             markers += marker to station
         }
@@ -261,6 +286,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         moveCamera(stations)
     }
 
+    /** Builds (and caches) the yellow thunderbolt marker icon. */
     private fun stationMarkerIcon(): BitmapDescriptor {
         stationIcon?.let { return it }
         val size = (44 * resources.displayMetrics.density).toInt().coerceAtLeast(1)
@@ -278,6 +304,11 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         return BitmapDescriptorFactory.fromBitmap(bitmap).also { stationIcon = it }
     }
 
+    /**
+     * Positions the camera:
+     * - on the user when GPS is available
+     * - otherwise on stations near Colombo, or all stations if none are nearby
+     */
     private fun moveCamera(stations: List<SolarStation>) {
         val map = googleMap ?: return
         val here = userLocation
@@ -285,6 +316,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(here, 13f))
             return
         }
+        // Prefer stations within ~80 km of Colombo for a sensible default view.
         val nearbyColombo = stations.filter { distanceKm(COLOMBO, LatLng(it.latitude, it.longitude)) <= 80 }
         val focus = nearbyColombo.ifEmpty { stations }
         if (focus.isEmpty()) {
@@ -295,6 +327,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(focus[0].latitude, focus[0].longitude), 13f))
             return
         }
+        // Fit multiple markers into one camera bounds.
         val bounds = LatLngBounds.builder()
         focus.forEach { bounds.include(LatLng(it.latitude, it.longitude)) }
         binding.mapContainer.post {
@@ -306,6 +339,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Fills the bottom sheet with station details, distance and weekly schedule. */
     private fun showStation(station: SolarStation) {
         val selectedChanged = selected?.id != station.id
         selected = station
@@ -320,11 +354,13 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         } else {
             getString(R.string.map_distance_km, distanceKm(here, LatLng(station.latitude, station.longitude)))
         }
+        // Only reset schedule UI when switching to a different station.
         if (selectedChanged) resetSchedule()
         loadSchedule(station)
         if (sheetShown) syncPeek() else pullUpSheet()
     }
 
+    /** Animates the bottom sheet up from below the screen into the collapsed (peek) position. */
     private fun pullUpSheet() {
         if (sheetShown || _binding == null) return
         sheetShown = true
@@ -336,6 +372,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         binding.tvSlideHours.alpha = 1f
         sheet.post {
             if (_binding == null) return@post
+            // Peek height equals the schedule panel so hours stay just off-screen.
             val peek = (binding.schedulePanel.height + topMargin(binding.schedulePanel)).coerceAtLeast(0)
             collapsedOffset = peek
             sheet.translationX = 0f
@@ -349,6 +386,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
                 .withEndAction {
                     entranceRunning = false
                     if (_binding == null || verticalDrag || scheduleExpanded) return@withEndAction
+                    // Re-measure after layout settles — panel height can change once content is drawn.
                     val extra = binding.schedulePanel.height + topMargin(binding.schedulePanel)
                     if (extra > 0) {
                         collapsedOffset = extra
@@ -360,6 +398,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Clears schedule rows when the selected station changes. */
     private fun resetSchedule() {
         scheduleExpanded = false
         scheduleLoadedFor = null
@@ -371,7 +410,9 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         binding.stationSheet.translationY = 0f
     }
 
+    /** Loads the weekly operating schedule for the selected station from the API. */
     private fun loadSchedule(station: SolarStation) {
+        // Skip if this station's schedule is already loaded.
         if (scheduleLoadedFor == station.id) return
         val stationId = station.id
         binding.scheduleRows.removeAllViews()
@@ -382,6 +423,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
             } catch (_: Exception) {
                 emptyList()
             }
+            // Ignore stale responses if the user already switched stations.
             if (_binding == null || selected?.id != stationId) return@launch
             renderSchedule(rows)
             scheduleLoadedFor = stationId
@@ -389,6 +431,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Re-parks the sheet at the collapsed peek after schedule content changes height. */
     private fun syncPeek() {
         val panel = binding.schedulePanel
         val sheet = binding.stationSheet
@@ -416,6 +459,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         if (panel.height > 0) parkSchedule()
     }
 
+    /** Sets translationY so only station details show and the schedule stays peeked off-screen. */
     private fun parkSchedule() {
         if (_binding == null || entranceRunning || sheetSettling || verticalDrag || scheduleExpanded || !sheetShown) return
         val panel = binding.schedulePanel
@@ -426,6 +470,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         updateHoursHint()
     }
 
+    /** Renders Monday–Sunday schedule rows into the sheet. */
     private fun renderSchedule(schedules: List<StationSchedule>) {
         val rows = binding.scheduleRows
         rows.removeAllViews()
@@ -472,16 +517,23 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Formats "HH:mm:ss" (or similar) down to a short "HH:mm" clock string. */
     private fun clock(value: String): String {
         return if (value.length >= 5) value.take(5) else value
     }
 
+    /**
+     * Sheet gestures:
+     * - vertical drag expands / collapses / hides the sheet
+     * - horizontal drag swipes between nearby stations
+     */
     private fun enableSheetGestures() {
         val sheet = binding.stationSheet
         val slop = android.view.ViewConfiguration.get(sheet.context).scaledTouchSlop
         val velocity = android.view.VelocityTracker.obtain()
         var downX = 0f
         var downY = 0f
+        // 0 = undecided, 1 = vertical, 2 = horizontal
         var mode = 0
         sheet.setOnTouchListener { _, event ->
             when (event.actionMasked) {
@@ -503,6 +555,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
                     velocity.addMovement(event)
                     val dx = event.rawX - downX
                     val dy = event.rawY - downY
+                    // Decide gesture axis once movement exceeds the touch slop.
                     if (mode == 0) {
                         if (kotlin.math.abs(dx) < slop && kotlin.math.abs(dy) < slop) {
                             return@setOnTouchListener false
@@ -538,6 +591,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
                             true
                         }
                         else -> {
+                            // Tap with almost no drag — snap back to the current expand/collapse state.
                             if (sheetShown && sheet.visibility == View.VISIBLE) {
                                 val target = if (scheduleExpanded) 0f else collapsedOffset.toFloat()
                                 if (kotlin.math.abs(sheet.translationY - target) > 1.5f) {
@@ -553,10 +607,12 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Chooses expand, collapse or hide based on drag distance and fling velocity. */
     private fun settleVertical(velocityY: Float, dragDy: Float) {
         val sheet = binding.stationSheet
         val y = sheet.translationY
         val peek = collapsedOffset.toFloat().coerceAtLeast(0f)
+        // Drag far enough down (or fling down) to dismiss the sheet entirely.
         val hideAt = peek + (sheet.height - peek).coerceAtLeast(0f) * 0.22f
         when {
             y > hideAt || (velocityY >= 1400f && dragDy > 0f && y > peek + 12f) -> hideSheet()
@@ -565,11 +621,13 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Swipes to the next/previous nearby station when dragged far enough sideways. */
     private fun settleHorizontal() {
         val sheet = binding.stationSheet
         val index = nearbyOrder.indexOfFirst { it.id == selected?.id }.coerceAtLeast(0)
         val step = when {
             nearbyOrder.size <= 1 -> 0
+            // Swipe left → next station; swipe right → previous.
             sheet.translationX < -sheet.width * 0.22f && index < nearbyOrder.lastIndex -> 1
             sheet.translationX > sheet.width * 0.22f && index > 0 -> -1
             else -> 0
@@ -584,6 +642,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
                 .withEndAction {
                     if (_binding == null) return@withEndAction
                     showNearby(step)
+                    // Slide the new station content in from the opposite side.
                     sheet.translationX = enterX
                     sheet.animate()
                         .translationX(0f)
@@ -593,6 +652,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
                 }
                 .start()
         } else {
+            // Not far enough — spring back to centre.
             sheet.animate()
                 .translationX(0f)
                 .setDuration(180)
@@ -601,6 +661,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Animates the sheet to fully expanded (Y=0) or collapsed peek height. */
     private fun animateSheetY(target: Float, expanded: Boolean) {
         val sheet = binding.stationSheet
         sheet.animate().cancel()
@@ -621,6 +682,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
             .start()
     }
 
+    /** Slides the sheet off-screen and resets schedule peek state. */
     private fun hideSheet() {
         val sheet = binding.stationSheet
         sheet.animate().cancel()
@@ -645,6 +707,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
             .start()
     }
 
+    /** Fades the "slide for hours" hint as the schedule panel comes into view. */
     private fun updateHoursHint() {
         if (_binding == null) return
         val peek = collapsedOffset.toFloat()
@@ -660,6 +723,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         return params.topMargin
     }
 
+    /** Moves selection to the next/previous station in nearby order and pans the map. */
     private fun showNearby(step: Int) {
         val order = nearbyOrder
         if (order.isEmpty()) return
@@ -672,6 +736,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         markers.firstOrNull { it.second.id == next.id }?.first?.showInfoWindow()
     }
 
+    /** Shows up to five name/address matches under the search box. */
     private fun showSuggestions(query: String) {
         val list = binding.suggestionList
         list.removeAllViews()
@@ -720,6 +785,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         list.visibility = View.VISIBLE
     }
 
+    /** Applies a suggestion: fills search, opens the sheet and zooms to the station. */
     private fun selectSuggestion(station: SolarStation) {
         applyingSuggestion = true
         binding.etSearch.setText(station.name)
@@ -741,6 +807,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         binding.suggestionList.visibility = View.GONE
     }
 
+    /** Shows/hides markers whose name or address matches the search query. */
     private fun filterMarkers(query: String) {
         val text = query.trim().lowercase()
         markers.forEach { (marker, station) ->
@@ -750,6 +817,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    /** Haversine distance in kilometres between two map points. */
     private fun distanceKm(from: LatLng, to: LatLng): Double {
         val earth = 6371.0
         val dLat = Math.toRadians(to.latitude - from.latitude)
@@ -760,6 +828,7 @@ class StationsMapFragment : Fragment(), OnMapReadyCallback {
     }
 
     companion object {
+        // Default map centre when the user location is not yet available.
         private val COLOMBO = LatLng(6.9271, 79.8612)
     }
 }

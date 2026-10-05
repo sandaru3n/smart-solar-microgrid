@@ -1,3 +1,4 @@
+// SlotLookupPage.jsx — looks up a single energy booking slot by id via /api/booking-slots.
 import { useState } from 'react'
 import { stationsApi } from '../../../api.js'
 

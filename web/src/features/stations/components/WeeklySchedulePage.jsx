@@ -1,3 +1,4 @@
+// WeeklySchedulePage.jsx — Backoffice UI to view and update a station's weekly operating schedule.
 import { useEffect, useState } from 'react'
 import { stationsApi } from '../../../api.js'
 

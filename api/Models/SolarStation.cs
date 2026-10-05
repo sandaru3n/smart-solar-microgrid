@@ -1,3 +1,9 @@
+/**
+ * File: SolarStation.cs
+ * Purpose: MongoDB document model representing a microgrid solar station (node) managed by the Backoffice.
+ * Author: M.S.N. Peiris it23201132
+ * Date: 2026
+ */
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 

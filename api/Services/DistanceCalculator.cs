@@ -1,3 +1,9 @@
+/**
+ * File: DistanceCalculator.cs
+ * Purpose: Haversine distance helper used for nearby solar-station search.
+ * Author: M.S.N. Peiris it23201132
+ * Date: 2026
+ */
 namespace SolarGrid.Api.Services;
 
 public static class DistanceCalculator
