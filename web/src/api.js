@@ -74,6 +74,8 @@ export const usersApi = {
   reject: (nic, reason) => request(`/users/${nic}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
   listProsumers: () => request('/users/prosumers'),
   getBookingProfile: (nic) => request(`/users/${encodeURIComponent(nic)}/booking`),
+  deleteUser: (nic) => request(`/users/${nic}`, { method: 'DELETE' }),
+  adminUpdateUser: (nic, body) => request(`/users/admin/${nic}`, { method: 'PUT', body: JSON.stringify(body) }),
 }
 
 export const stationsApi = {

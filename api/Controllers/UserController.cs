@@ -236,6 +236,27 @@ public async Task<IActionResult> GetPendingUsers()
 }
 
 
+
+[Authorize(Roles = "BACKOFFICE")]
+[HttpPut("admin/{nic}")]
+public async Task<IActionResult> AdminUpdateUser(string nic, [FromBody] UpdateProfileRequest request)
+{
+    var user = await _userService.GetByNICAsync(nic);
+    if (user == null) return NotFound(new { message = "User not found." });
+
+    if (!string.IsNullOrWhiteSpace(request.Name)) user.Name = request.Name;
+    if (!string.IsNullOrWhiteSpace(request.Email)) user.Email = request.Email;
+    if (!string.IsNullOrWhiteSpace(request.Phone)) user.Phone = request.Phone;
+    if (!string.IsNullOrWhiteSpace(request.Address)) user.Address = request.Address;
+
+    var result = await _userService.UpdateUserAsync(user);
+    if (!result.Success) return BadRequest(new { message = result.Message });
+
+    return Ok(user);
+}
+
+
+
 [Authorize(Roles = "BACKOFFICE")]
 [HttpPatch("{nic}/deactivate")]
 public async Task<IActionResult> DeactivateUser(string nic)

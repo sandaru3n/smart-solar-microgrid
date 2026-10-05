@@ -5,7 +5,7 @@ import { cardClass, focusRing, tones } from './styles'
 /** Same destinations as the sidebar; `backofficeOnly` routes are guarded by ProtectedRoute. */
 const ACTIONS = [
   { to: '/dashboard/stations/create', label: 'Create station', icon: PlusIcon },
-  { to: '/dashboard/users/create-staff', label: 'Create staff', icon: UserPlusIcon, backofficeOnly: true },
+  { to: '/dashboard/users/create-staff', label: 'Create user', icon: UserPlusIcon, backofficeOnly: true },
   { to: '/dashboard/slot-lookup', label: 'Slot lookup', icon: SearchIcon },
 ]
 
