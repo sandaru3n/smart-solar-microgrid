@@ -1,3 +1,8 @@
+/*
+ * File: PendingRegistration.cs
+ * Description: Represents a temporary registration session used to track Prosumer onboarding and OTP validation states.
+ * Author: IT23163904_WVADK Chamara
+ */
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -21,6 +26,7 @@ public class PendingRegistration
     public string Address { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
 
+    // Member 1: Tracks OTP generation and verification for the initial registration step.
     public string OtpHash { get; set; } = string.Empty;
     public DateTime OtpExpiry { get; set; }
     public int OtpAttempts { get; set; } = 0;

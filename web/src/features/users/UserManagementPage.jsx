@@ -1,3 +1,8 @@
+/*
+ * File: UserManagementPage.jsx
+ * Description: Provides the Backoffice interface for managing user accounts, editing profiles, deactivating users, and approving deactivation requests.
+ * Author: IT23163904_WVADK Chamara
+ */
 import { useState, useEffect } from 'react';
 import { usersApi, deactivationRequestsApi } from '../../api';
 
@@ -29,6 +34,7 @@ export default function UserManagementPage() {
     setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
   };
 
+  // Fetches the complete list of users from the backend API.
   const fetchUsers = async () => {
     setLoading(true);
     setError('');
@@ -42,6 +48,7 @@ export default function UserManagementPage() {
     }
   };
 
+  // Retrieves all pending account deactivation requests submitted by Prosumers.
   const fetchPendingRequests = async () => {
     try {
       const data = await deactivationRequestsApi.getPending();
@@ -56,12 +63,14 @@ export default function UserManagementPage() {
     fetchPendingRequests();
   }, []);
 
+  // Prompts the administrator for confirmation before altering a user's account status.
   const promptStatusChange = (user, newStatus) => {
     setTargetUser(user);
     setTargetAction(newStatus);
     setConfirmModalOpen(true);
   };
 
+  // Executes the confirmed account action (Deactivate, Reactivate, or Delete) via the API.
   const confirmAction = async () => {
     setConfirmModalOpen(false);
     try {
@@ -79,6 +88,7 @@ export default function UserManagementPage() {
     }
   };
 
+  // Opens the profile edit modal and pre-fills it with the selected user's current information.
   const openEditModal = (user) => {
     setEditingUser(user);
     setEditForm({
@@ -90,6 +100,7 @@ export default function UserManagementPage() {
     setEditModalOpen(true);
   };
 
+  // Submits the edited profile details directly to the backend to update the user.
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -102,6 +113,7 @@ export default function UserManagementPage() {
     }
   };
 
+  // Approves a Prosumer's deactivation request and updates the UI lists.
   const approveRequest = async (id) => {
     try {
       await deactivationRequestsApi.approve(id);
@@ -116,6 +128,7 @@ export default function UserManagementPage() {
     }
   };
 
+  // Rejects a Prosumer's deactivation request, enforcing a required rejection reason.
   const rejectRequest = async () => {
     if (!rejectReason) {
       showToast("Please enter a rejection reason.", "error");

@@ -1,3 +1,8 @@
+/*
+ * File: AuthInterceptor.kt
+ * Description: Intercepts outgoing HTTP requests to append the JWT token and handles 401 Unauthorized responses for auto-logout.
+ * Author: IT23163904_WVADK Chamara
+ */
 package com.ead.solargrid.api
 
 import android.content.Context
@@ -6,6 +11,7 @@ import okhttp3.Response
 import com.ead.solargrid.database.SessionManager
 
 class AuthInterceptor(private val context: Context) : Interceptor {
+    // Injects the saved JWT token into the Authorization header of every outgoing API request.
     override fun intercept(chain: Interceptor.Chain): Response {
         val sessionManager = SessionManager(context)
         val token = sessionManager.fetchAuthToken()

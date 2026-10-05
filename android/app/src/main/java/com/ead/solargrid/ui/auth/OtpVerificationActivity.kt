@@ -1,3 +1,8 @@
+/*
+ * File: OtpVerificationActivity.kt
+ * Description: Provides the UI and logic for verifying the registration OTP during Prosumer onboarding.
+ * Author: IT23163904_WVADK Chamara
+ */
 package com.ead.solargrid.ui.auth
 
 import android.content.Intent
@@ -18,6 +23,7 @@ class OtpVerificationActivity : AppCompatActivity() {
 
     private var registrationId: String? = null
 
+    // Initializes the OTP verification view, setting up the API call for verification and the resend action.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_otp_verification)

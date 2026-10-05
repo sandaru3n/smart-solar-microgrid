@@ -1,3 +1,8 @@
+/*
+ * File: ForgotPasswordActivity.kt
+ * Description: Provides the UI for initiating the password recovery flow by sending an OTP to the user's email.
+ * Author: IT23163904_WVADK Chamara
+ */
 package com.ead.solargrid.ui.auth
 
 import android.content.Intent
@@ -14,6 +19,7 @@ import kotlinx.coroutines.launch
 
 class ForgotPasswordActivity : AppCompatActivity() {
 
+    // Initializes the Forgot Password UI and handles the submission of the user's email to request an OTP.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_forgot_password)

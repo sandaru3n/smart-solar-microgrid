@@ -1,3 +1,8 @@
+/*
+ * File: PendingUsersPage.jsx
+ * Description: Provides the Backoffice interface for reviewing, activating, or rejecting pending Prosumer registrations, including NIC validation.
+ * Author: IT23163904_WVADK Chamara
+ */
 import { useState, useEffect } from 'react';
 import { usersApi } from '../../api';
 
@@ -38,6 +43,7 @@ export default function PendingUsersPage() {
     setAlertModalOpen(true);
   };
 
+  // Fetches the list of all Prosumer accounts that are awaiting backoffice activation.
   const fetchPending = async () => {
     setLoading(true);
     setError('');
@@ -55,6 +61,7 @@ export default function PendingUsersPage() {
     fetchPending();
   }, []);
 
+  // Retrieves and displays the user's uploaded NIC document for manual review.
   const handleViewNIC = async (nic) => {
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -71,6 +78,7 @@ export default function PendingUsersPage() {
     }
   };
 
+  // Triggers the backend AI OCR validation process for the user's NIC document and displays the result.
   const handleAiValidate = async (nic) => {
     setAiLoading(true);
     try {
@@ -85,11 +93,13 @@ export default function PendingUsersPage() {
     }
   };
 
+  // Opens the confirmation modal for activating a pending account.
   const handleActivate = async (nic) => {
     setActivateNic(nic);
     setActivateModalOpen(true);
   };
 
+  // Submits the account activation request to the backend.
   const confirmActivate = async () => {
     setIsActivating(true);
     try {
@@ -104,12 +114,14 @@ export default function PendingUsersPage() {
     }
   };
 
+  // Opens the registration rejection modal where the backoffice user can provide a reason.
   const openRejectModal = (nic) => {
     setRejectNic(nic);
     setRejectReason('');
     setRejectModalOpen(true);
   };
 
+  // Submits the rejection reason to the backend, discarding the registration and notifying the user.
   const submitReject = async () => {
     if (rejectReason.trim() === '') {
       showAlert('You must provide a rejection reason.');

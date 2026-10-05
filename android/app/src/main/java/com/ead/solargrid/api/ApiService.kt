@@ -1,3 +1,8 @@
+/*
+ * File: ApiService.kt
+ * Description: Defines the Retrofit API interfaces, including Member 1's Authentication and User Management endpoints.
+ * Author: IT23163904_WVADK Chamara (Auth and User Management)
+ */
 package com.ead.solargrid.api
 
 import com.ead.solargrid.models.*
@@ -7,27 +12,35 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    // Member 1: Authenticates a user and retrieves a JWT token.
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
+    // Member 1: Initiates a Prosumer registration and requests an OTP to the provided email.
     @POST("api/auth/register/start")
     suspend fun registerStart(@Body request: RegisterStartRequest): Response<RegisterStartResponse>
 
+    // Member 1: Verifies the registration OTP to complete the initial registration step.
     @POST("api/auth/register/verify-otp")
     suspend fun verifyOtp(@Body request: VerifyOtpRequest): Response<User>
 
+    // Member 1: Requests a new OTP for an ongoing registration session.
     @POST("api/auth/register/resend-otp")
     suspend fun resendOtp(@Body request: ResendOtpRequest): Response<BaseResponse>
 
+    // Member 1: Initiates the password recovery process by sending a reset OTP to the user's email.
     @POST("api/auth/forgot-password")
     suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<BaseResponse>
 
+    // Member 1: Completes the password recovery process by verifying the OTP and setting a new password.
     @POST("api/auth/reset-password")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<BaseResponse>
 
+    // Member 1: Retrieves the authenticated user's profile details.
     @GET("api/users/{nic}")
     suspend fun getUser(@Path("nic") nic: String): Response<User>
 
+    // Member 1: Updates the authenticated user's basic profile details (Name, Phone, Address).
     @PATCH("api/users/{nic}/profile")
     suspend fun updateProfile(
         @Path("nic") nic: String,
@@ -46,6 +59,7 @@ interface ApiService {
         @Body request: EmailVerifyRequest
     ): Response<BaseResponse>
 
+    // Member 1: Submits a formal request for account deactivation.
     @POST("api/deactivation-requests/users/{nic}")
     suspend fun requestDeactivation(
         @Path("nic") nic: String,

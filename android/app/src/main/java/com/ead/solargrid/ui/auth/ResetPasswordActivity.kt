@@ -1,3 +1,8 @@
+/*
+ * File: ResetPasswordActivity.kt
+ * Description: Provides the UI to verify the password reset OTP and set a new password.
+ * Author: IT23163904_WVADK Chamara
+ */
 package com.ead.solargrid.ui.auth
 
 import android.content.Intent
@@ -14,6 +19,7 @@ import kotlinx.coroutines.launch
 
 class ResetPasswordActivity : AppCompatActivity() {
 
+    // Initializes the Reset Password UI and submits the received OTP along with the new password to the API.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_reset_password)

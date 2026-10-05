@@ -1,3 +1,8 @@
+/*
+ * File: LoginPage.jsx
+ * Description: Provides the web authentication interface for staff members and handles the login form submission.
+ * Author: IT23163904_WVADK Chamara
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
@@ -16,6 +21,7 @@ export default function LoginPage() {
     setMounted(true);
   }, []);
 
+  // Handles the login form submission, authenticates the user via the AuthContext, and redirects based on role.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

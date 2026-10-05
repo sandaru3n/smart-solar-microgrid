@@ -1,3 +1,8 @@
+/*
+ * File: ProfileFragment.kt
+ * Description: Displays the Prosumer's profile, allows updating details/profile picture, handling email changes, and requesting account deactivation.
+ * Author: IT23163904_WVADK Chamara
+ */
 package com.ead.solargrid.ui.home
 
 import android.app.Dialog
@@ -41,6 +46,7 @@ class ProfileFragment : Fragment() {
         return content.root
     }
 
+    // Initializes the profile view by loading the cached user session and refreshing it silently from the API.
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -72,6 +78,7 @@ class ProfileFragment : Fragment() {
         }
     }
 
+    // Displays a confirmation dialog before clearing the user session and returning to the Login screen.
     private fun confirmLogout(session: SessionManager) {
         val dialogBinding = DialogLogoutConfirmBinding.inflate(layoutInflater)
         val dialog = Dialog(requireContext())
@@ -94,6 +101,7 @@ class ProfileFragment : Fragment() {
         dialog.show()
     }
 
+    // Binds the provided User data model to the UI components on the profile screen.
     private fun showUser(user: User) {
         binding.tvProfileName.text = user.name.ifBlank { "—" }
         binding.tvProfileNic.text = user.nic.ifBlank { "—" }
@@ -136,6 +144,7 @@ class ProfileFragment : Fragment() {
             }
     }
 
+    // Opens the profile editing dialog and handles the distinction between general updates and email changes.
     private fun showEditProfileDialog(user: com.ead.solargrid.models.User?, session: SessionManager) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(com.ead.solargrid.R.layout.dialog_edit_profile, null)
         val etName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.ead.solargrid.R.id.etEditName)
@@ -190,6 +199,7 @@ class ProfileFragment : Fragment() {
         dialog.show()
     }
 
+    // Initiates the email change verification flow by requesting an OTP from the backend.
     private fun initiateEmailChange(nic: String?, newEmail: String, pendingRequest: com.ead.solargrid.models.UpdateProfileRequest, session: SessionManager) {
         if (nic == null) return
         viewLifecycleOwner.lifecycleScope.launch {
@@ -208,6 +218,7 @@ class ProfileFragment : Fragment() {
         }
     }
 
+    // Displays a dialog prompting the user to enter the OTP sent to their new email address.
     private fun showEmailOtpDialog(nic: String, pendingRequest: com.ead.solargrid.models.UpdateProfileRequest, session: SessionManager) {
         val input = com.google.android.material.textfield.TextInputEditText(requireContext())
         input.hint = "Enter OTP sent to new email"
@@ -228,6 +239,7 @@ class ProfileFragment : Fragment() {
             .show()
     }
 
+    // Verifies the email change OTP and if successful, proceeds to save the rest of the profile updates.
     private fun verifyEmailChangeAndSave(nic: String, otp: String, pendingRequest: com.ead.solargrid.models.UpdateProfileRequest, session: SessionManager) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -247,6 +259,7 @@ class ProfileFragment : Fragment() {
     }
     
     private var isUploading = false
+    // Uploads the selected profile picture to Cloudinary and saves the resulting URL to the user's profile.
     private fun uploadProfilePic(uri: android.net.Uri) {
         if (isUploading) return
         isUploading = true
@@ -272,6 +285,7 @@ class ProfileFragment : Fragment() {
         }).dispatch()
     }
 
+    // Submits the finalized profile updates to the backend API and refreshes the local session and UI.
     private fun updateProfile(nic: String?, request: com.ead.solargrid.models.UpdateProfileRequest, session: SessionManager) {
         if (nic == null) return
         viewLifecycleOwner.lifecycleScope.launch {
@@ -313,6 +327,7 @@ class ProfileFragment : Fragment() {
         }
     }
 
+    // Prompts the user for a reason and submits a formal account deactivation request to the Backoffice.
     private fun requestDeactivation(nic: String?) {
         if (nic == null) return
         

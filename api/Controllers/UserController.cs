@@ -1,3 +1,8 @@
+/*
+ * File: UserController.cs
+ * Description: Controller for managing user accounts, profiles, roles, registrations, and account statuses.
+ * Author: IT23163904_WVADK Chamara
+ */
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolarGrid.Api.Models;
@@ -11,11 +16,13 @@ public class UserController : ControllerBase
 {
     private readonly UserService _userService;
 
+    // Initializes the UserController with the required UserService.
     public UserController(UserService userService)
     {
         _userService = userService;
     }
 
+    // Retrieves a list of all registered users in the system (Backoffice access only).
     [Authorize(Roles = "BACKOFFICE")]
     [HttpGet]
     public async Task<IActionResult> GetAllUsers()
@@ -24,6 +31,7 @@ public class UserController : ControllerBase
         return Ok(users.Select(UserResponse.FromUser));
     }
 
+    // Retrieves a filtered list of all Prosumer accounts along with their statuses.
     [AllowAnonymous]
     [HttpGet("prosumers")]
     public async Task<IActionResult> ListProsumers()
@@ -43,6 +51,7 @@ public class UserController : ControllerBase
         return Ok(prosumers);
     }
 
+    // Retrieves the booking-relevant profile information for a specific Prosumer via their NIC.
     [AllowAnonymous]
     [HttpGet("{nic}/booking")]
     public async Task<IActionResult> GetBookingProfile(string nic)
@@ -76,7 +85,8 @@ public class UserController : ControllerBase
         });
     }
 
-    [Authorize(Roles = "BACKOFFICE")]
+// Creates a new Prosumer user account directly without the normal registration flow (Backoffice access only).
+[Authorize(Roles = "BACKOFFICE")]
 [HttpPost]
 public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
 {
@@ -136,7 +146,8 @@ public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request
     );
 }
 
-    [Authorize(Roles = "BACKOFFICE")]
+// Creates a new staff account (Backoffice or Grid Operator) and saves it to the database.
+[Authorize(Roles = "BACKOFFICE")]
 [HttpPost("staff")]
 public async Task<IActionResult> CreateStaff(
     [FromBody] CreateStaffRequest request)
@@ -187,7 +198,8 @@ public async Task<IActionResult> CreateStaff(
     );
 }
 
-    [Authorize]
+// Retrieves the full profile of a specific user. Restricts non-Backoffice users from viewing others' profiles.
+[Authorize]
 [HttpGet("{nic}")]
 public async Task<IActionResult> GetUser(string nic)
 {
@@ -219,6 +231,7 @@ public async Task<IActionResult> GetUser(string nic)
 }
 
 
+// Retrieves all Prosumer accounts that are currently pending administrative activation.
 [Authorize(Roles = "BACKOFFICE")]
 [HttpGet("pending")]
 public async Task<IActionResult> GetPendingUsers()
@@ -237,6 +250,7 @@ public async Task<IActionResult> GetPendingUsers()
 
 
 
+// Allows Backoffice administrators to directly edit a user's profile details bypassing standard verification.
 [Authorize(Roles = "BACKOFFICE")]
 [HttpPut("admin/{nic}")]
 public async Task<IActionResult> AdminUpdateUser(string nic, [FromBody] UpdateProfileRequest request)
@@ -257,6 +271,7 @@ public async Task<IActionResult> AdminUpdateUser(string nic, [FromBody] UpdatePr
 
 
 
+// Deactivates a specific user account. Prevents Backoffice users from deactivating themselves.
 [Authorize(Roles = "BACKOFFICE")]
 [HttpPatch("{nic}/deactivate")]
 public async Task<IActionResult> DeactivateUser(string nic)
@@ -280,6 +295,7 @@ public async Task<IActionResult> DeactivateUser(string nic)
     return Ok(new { message = result.Message });
 }
 
+// Reactivates a previously deactivated user account.
 [Authorize(Roles = "BACKOFFICE")]
 [HttpPatch("{nic}/reactivate")]
 public async Task<IActionResult> ReactivateUser(string nic)
@@ -297,6 +313,7 @@ public async Task<IActionResult> ReactivateUser(string nic)
     return Ok(new { message = result.Message });
 }
 
+// Activates a newly registered Prosumer account that is currently pending approval.
 [Authorize(Roles = "BACKOFFICE")]
 [HttpPatch("{nic}/activate")]
 public async Task<IActionResult> ActivateUser(string nic)
@@ -319,6 +336,7 @@ public async Task<IActionResult> ActivateUser(string nic)
 
 public class RejectRequest { public string Reason { get; set; } = ""; }
 
+// Rejects a pending Prosumer registration and notifies the user with the rejection reason.
 [Authorize(Roles = "BACKOFFICE")]
 [HttpPatch("{nic}/reject")]
 public async Task<IActionResult> RejectRegistration(string nic, [FromBody] RejectRequest request)
@@ -331,6 +349,7 @@ public async Task<IActionResult> RejectRegistration(string nic, [FromBody] Rejec
     return Ok(new { message = result.Message });
 }
 
+// Deletes a specific user account entirely. Prevents deletion of self and other Backoffice administrators.
 [Authorize(Roles = "BACKOFFICE")]
 [HttpDelete("{nic}")]
 public async Task<IActionResult> DeleteUser(string nic)
@@ -364,6 +383,7 @@ public async Task<IActionResult> DeleteUser(string nic)
     });
 }
 
+    // Retrieves a list of all Backoffice and Grid Operator staff members.
     [Authorize(Roles = "BACKOFFICE")]
     [HttpGet("staff")]
     public async Task<IActionResult> GetStaff()
@@ -375,6 +395,7 @@ public async Task<IActionResult> DeleteUser(string nic)
         return Ok(staff);
     }
 
+    // Updates a user's own profile information (excluding email/NIC modifications).
     [Authorize]
     [HttpPatch("{nic}/profile")]
     public async Task<IActionResult> UpdateProfile(string nic, [FromBody] UpdateProfileRequest request)
@@ -396,6 +417,7 @@ public async Task<IActionResult> DeleteUser(string nic)
         return Ok(result.User);
     }
 
+    // Allows a user to request the deactivation of their own account.
     [Authorize]
     [HttpPatch("{nic}/deactivation-request")]
     public async Task<IActionResult> RequestDeactivation(string nic)
@@ -420,6 +442,7 @@ public async Task<IActionResult> DeleteUser(string nic)
         return Ok(new { message = result.Message });
     }
 
+    // Redirects to the secure URL of the user's uploaded NIC document.
     [Authorize(Roles = "BACKOFFICE")]
     [HttpGet("{nic}/nic-document")]
     public async Task<IActionResult> GetNicDocument(string nic)
@@ -432,6 +455,7 @@ public async Task<IActionResult> DeleteUser(string nic)
         return Redirect(url);
     }
 
+    // Runs AI validation on the provided user's uploaded NIC document against their profile details.
     [Authorize(Roles = "BACKOFFICE")]
     [HttpPost("{nic}/validate-nic-ai")]
     public async Task<IActionResult> ValidateNicWithAi(string nic)
@@ -444,6 +468,7 @@ public async Task<IActionResult> DeleteUser(string nic)
         return Ok(new { message = result.Message, aiResponse = result.AiResponse });
     }
 
+    // Initiates an email change request by sending an OTP to the new email address.
     [Authorize]
     [HttpPost("{nic}/request-email-change")]
     public async Task<IActionResult> RequestEmailChange(string nic, [FromBody] EmailChangeRequest request)
@@ -457,6 +482,7 @@ public async Task<IActionResult> DeleteUser(string nic)
         return Ok(new { message = result.Message });
     }
 
+    // Verifies the OTP for an email change request and updates the user's email if valid.
     [Authorize]
     [HttpPost("{nic}/verify-email-change")]
     public async Task<IActionResult> VerifyEmailChange(string nic, [FromBody] EmailVerifyRequest request)

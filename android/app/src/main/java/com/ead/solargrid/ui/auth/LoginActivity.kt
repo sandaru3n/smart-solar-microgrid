@@ -1,3 +1,8 @@
+/*
+ * File: LoginActivity.kt
+ * Description: Provides the Member 1 user login interface, authentication API integration, and role-based navigation flow.
+ * Author: IT23163904_WVADK Chamara
+ */
 package com.ead.solargrid.ui.auth
 
 import android.animation.Animator
@@ -45,6 +50,7 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+    // Initializes the Login UI, sets up listeners, and handles the login API call and session storage upon submission.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)

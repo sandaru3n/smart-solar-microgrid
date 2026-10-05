@@ -1,3 +1,8 @@
+/*
+ * File: User.cs
+ * Description: Represents the core User entity in the MongoDB database, capturing authentication and profile details.
+ * Author: IT23163904_WVADK Chamara
+ */
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace SolarGrid.Api.Models;
@@ -5,11 +10,13 @@ namespace SolarGrid.Api.Models;
 [BsonIgnoreExtraElements]
 public class User
 {
+    // Member 1: Sri Lankan National Identity Card number serves as the primary key.
     [BsonId]
     public string NIC { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
 
+    // Member 1: Email address used for OTP verification and password recovery.
     public string Email { get; set; } = string.Empty;
 
     public string Phone { get; set; } = string.Empty;

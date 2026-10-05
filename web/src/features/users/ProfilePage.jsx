@@ -1,3 +1,8 @@
+/*
+ * File: ProfilePage.jsx
+ * Description: Displays the authenticated user's account details and current status.
+ * Author: IT23163904_WVADK Chamara
+ */
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { usersApi } from '../../api';
@@ -9,6 +14,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Retrieves the authenticated user's profile from the API and displays the account information.
     const fetchProfile = async () => {
       try {
         const data = await usersApi.getProfile(authUser.nic);
