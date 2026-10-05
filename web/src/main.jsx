@@ -49,6 +49,8 @@ createRoot(document.getElementById('root')).render(
             <Route element={<ProtectedRoute roles={BOOKINGS_ROLES} />}>
               <Route path="/reservations/all" element={<ReservationsAllPage />} />
             </Route>
+            {/* Pending approvals moved to Booking Management; keep old links working. */}
+            <Route path="/reservations/pending" element={<Navigate to="/bookings/pending" replace />} />
             <Route path="/reservations/*" element={<ReservationsModule />} />
 
             {/* Member 4 - Booking monitoring (staff only; Grid Operators included) */}

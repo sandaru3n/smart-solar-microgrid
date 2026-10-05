@@ -14,7 +14,6 @@ export function bindRouter(navigate) {
 export const paths = {
   home: () => BASE_PATH,
   create: () => `${BASE_PATH}/new`,
-  pending: () => `${BASE_PATH}/pending`,
   details: (id) => `${BASE_PATH}/${encodeURIComponent(id)}`,
   edit: (id) => `${BASE_PATH}/${encodeURIComponent(id)}/edit`,
   summary: (id, action) => `${BASE_PATH}/${encodeURIComponent(id)}/${action}`,
@@ -50,7 +49,6 @@ export function matchRoute(pathname, state) {
 
   if (parts.length === 0) return { name: 'home' };
   if (parts.length === 1 && parts[0] === 'new') return { name: 'create' };
-  if (parts.length === 1 && parts[0] === 'pending') return { name: 'pending' };
   if (parts.length === 1 && parts[0] === 'all') return { name: 'outside' };
 
   const [id, sub] = parts;
