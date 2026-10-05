@@ -1,3 +1,4 @@
+// CreateStationPage.jsx — Backoffice form to register a new solar station with map location picker.
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { stationsApi } from '../../../api.js'

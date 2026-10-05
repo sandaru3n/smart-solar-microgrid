@@ -101,6 +101,7 @@ export const usersApi = {
   getBookingProfile: (nic) => request(`/users/${encodeURIComponent(nic)}/booking`),
 }
 
+// stationsApi — calls to the Backoffice-only /api/stations and /api/booking-slots endpoints.
 export const stationsApi = {
   list: (includeInactive = false) => listStations(includeInactive),
   listAll: () => listStations(true),

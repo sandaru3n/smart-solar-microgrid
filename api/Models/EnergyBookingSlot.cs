@@ -1,3 +1,9 @@
+/**
+ * File: EnergyBookingSlot.cs
+ * Purpose: MongoDB document model representing a bookable energy time slot at a solar station, including capacity and reservation counts.
+ * Author: M.S.N. Peiris it23201132
+ * Date: 2026
+ */
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 

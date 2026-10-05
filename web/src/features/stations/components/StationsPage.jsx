@@ -1,3 +1,4 @@
+// StationsPage.jsx — Backoffice station list, create/edit, activate/deactivate and slot management UI.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { stationsApi } from '../../../api.js'

@@ -1,3 +1,4 @@
+// LocationPickerMap.jsx — Google Maps picker used when creating or editing a station location.
 import { useEffect, useRef, useState } from 'react'
 
 const MAPS_KEY = import.meta.env.VITE_MAPS_API_KEY || ''

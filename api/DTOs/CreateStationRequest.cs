@@ -1,3 +1,9 @@
+/**
+ * File: CreateStationRequest.cs
+ * Purpose: Request body for creating a new microgrid solar station.
+ * Author: M.S.N. Peiris it23201132
+ * Date: 2026
+ */
 namespace SolarGrid.Api.DTOs;
 
 public class CreateStationRequest

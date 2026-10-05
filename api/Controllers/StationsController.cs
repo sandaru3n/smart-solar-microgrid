@@ -1,3 +1,9 @@
+/**
+ * File: StationsController.cs
+ * Purpose: Role-aware station reads and Backoffice-only station management endpoints.
+ * Author: M.S.N. Peiris it23201132
+ * Date: 2026
+ */
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Driver;

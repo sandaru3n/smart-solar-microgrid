@@ -1,3 +1,9 @@
+/**
+ * File: BookingSlotsController.cs
+ * Purpose: Endpoints to create and retrieve energy booking slots for solar stations.
+ * Author: M.S.N. Peiris it23201132
+ * Date: 2026
+ */
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using SolarGrid.Api.DTOs;
