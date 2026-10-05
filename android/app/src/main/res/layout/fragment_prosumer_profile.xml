@@ -9,11 +9,20 @@
     android:paddingTop="10dp"
     android:paddingBottom="12dp">
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="vertical">
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="ifContentScrolls"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="8dp">
 
         <TextView
             android:layout_width="wrap_content"
@@ -251,41 +260,54 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEditProfile"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="32dp"
-            android:text="Edit Profile"
-            android:textAllCaps="false"
-            android:textStyle="bold"
-            app:cornerRadius="16dp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDeactivate"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="12dp"
-            android:text="Request Deactivation"
-            android:textColor="#DC2626"
-            android:textAllCaps="false"
-            app:strokeColor="#DC2626"
-            app:strokeWidth="1dp"
-            android:textStyle="bold"
-            app:backgroundTint="#FFF1F2"
-            app:cornerRadius="16dp" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnEditProfile"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="8dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/profile_edit"
+        android:textAllCaps="false"
+        android:textColor="@color/dashboard_text"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:backgroundTint="@color/solarix_header"
+        app:cornerRadius="16dp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLogout"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="12dp"
-            android:text="@string/logout"
-            android:textAllCaps="false"
-            android:textColor="@color/white"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            app:backgroundTint="#DC2626"
-            app:cornerRadius="16dp" />
-    </LinearLayout>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDeactivate"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="8dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/profile_request_deactivation"
+        android:textAllCaps="false"
+        android:textColor="#DC2626"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:backgroundTint="#FFF1F2"
+        app:cornerRadius="16dp"
+        app:strokeColor="#DC2626"
+        app:strokeWidth="1dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLogout"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="8dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/logout"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:backgroundTint="#DC2626"
+        app:cornerRadius="16dp" />
 </LinearLayout>
