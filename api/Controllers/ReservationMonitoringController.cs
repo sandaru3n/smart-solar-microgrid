@@ -6,7 +6,7 @@ using SolarGrid.Api.Services;
 namespace SolarGrid.Api.Controllers;
 
 /// <summary>
-/// Member 4 endpoints on /api/reservations.
+/// Member 4 IT23250574 endpoints on /api/reservations. 
 /// GET /api/reservations/{id} is Member 3's endpoint and is reused, not duplicated.
 /// Role and ownership checks are done in ReservationMonitoringService.
 /// </summary>
