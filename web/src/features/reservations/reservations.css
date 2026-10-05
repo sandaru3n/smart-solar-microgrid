@@ -1247,25 +1247,6 @@
   color: var(--rm-muted);
 }
 
-.rm-pending {
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
-}
-
-.rm-pending .rm-sample {
-  flex: 1;
-  min-width: 0;
-}
-
-.rm-pending__actions {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
 /* Result and actions */
 
 .rm-result {
@@ -1451,17 +1432,5 @@
   .rm-sample > .rm-value-stack,
   .rm-sample__chevron {
     display: none;
-  }
-
-  .rm-pending {
-    flex-direction: column;
-  }
-
-  .rm-pending__actions {
-    flex-direction: row;
-  }
-
-  .rm-pending__actions .rm-button {
-    flex: 1;
   }
 }

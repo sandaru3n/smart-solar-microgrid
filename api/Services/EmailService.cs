@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using System.Text;
 using SolarGrid.Api.Models;
 
 namespace SolarGrid.Api.Services;
@@ -90,5 +91,42 @@ public class EmailService : IEmailService
         {
             _logger.LogError(ex, "Error scheduling email to {Email}", toEmail);
         }
+    }
+
+    public Task SendEmailAsync(string toEmail, string subject, string textBody, string htmlBody)
+    {
+        // Fire and forget like the other emails: a slow or failing SMTP server
+        // must never block or fail the request that triggered the email.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var message = new MailMessage
+                {
+                    From = new MailAddress(_settings.FromEmail, _settings.FromName),
+                    Subject = subject
+                };
+                message.To.Add(new MailAddress(toEmail));
+                message.AlternateViews.Add(
+                    AlternateView.CreateAlternateViewFromString(textBody, Encoding.UTF8, "text/plain"));
+                message.AlternateViews.Add(
+                    AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, "text/html"));
+
+                using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
+                {
+                    Credentials = new NetworkCredential(_settings.SmtpUsername, _settings.SmtpPassword),
+                    EnableSsl = true
+                };
+
+                await client.SendMailAsync(message);
+                _logger.LogInformation("Email '{Subject}' sent successfully to {Email}", subject, toEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send email '{Subject}' to {Email}", subject, toEmail);
+            }
+        });
+
+        return Task.CompletedTask;
     }
 }
