@@ -175,6 +175,8 @@
     <string name="logout_confirm_body">You will need to sign in again to use Solarix.</string>
     <string name="logout_confirm_stay">Stay signed in</string>
     <string name="profile_subtitle">Your account details</string>
+    <string name="profile_edit">Edit Profile</string>
+    <string name="profile_request_deactivation">Request Deactivation</string>
     <string name="profile_nic">NIC</string>
     <string name="profile_email">Email</string>
     <string name="profile_phone">Phone</string>
