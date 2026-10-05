@@ -40,19 +40,44 @@ export async function request(path, options = {}) {
   }
 
   if (!response.ok) {
+    const message =
+      data?.message ||
+      data?.Message ||
+      data?.detail ||
+      data?.title ||
+      (typeof data === 'string' ? data : null)
     if (response.status === 401) {
-      throw new ApiError(data?.message || 'Session expired. Please login again.', 401, data)
+      throw new ApiError(message || 'Session expired. Please login again.', 401, data)
     }
     if (response.status === 403) {
-      throw new ApiError('You do not have permission to perform this action.', 403, data)
+      throw new ApiError(message || 'You do not have permission to perform this action.', 403, data)
     }
     if (response.status === 404) {
-      throw new ApiError('User not found.', 404, data)
+      throw new ApiError(message || 'Not found.', 404, data)
     }
-    throw new ApiError(data?.message || `Request failed (${response.status})`, response.status, data)
+    throw new ApiError(message || `Request failed (${response.status})`, response.status, data)
   }
 
   return data
+}
+
+function normalizeStation(station) {
+  if (!station || typeof station !== 'object') return station
+  const id = station.id ?? station.Id ?? station._id
+  const isActive = station.isActive ?? station.IsActive
+  return {
+    ...station,
+    ...(id !== undefined ? { id: String(id) } : {}),
+    ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}),
+  }
+}
+
+async function listStations(includeInactive) {
+  // Query flag only — never use /stations/{word} (that hits GetStation and breaks Mongo).
+  const path = includeInactive ? '/stations?includeInactive=true' : '/stations'
+  const data = await request(path)
+  if (!Array.isArray(data)) return []
+  return data.map(normalizeStation)
 }
 
 export const authApi = {
@@ -74,17 +99,18 @@ export const usersApi = {
   reject: (nic, reason) => request(`/users/${nic}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
   listProsumers: () => request('/users/prosumers'),
   getBookingProfile: (nic) => request(`/users/${encodeURIComponent(nic)}/booking`),
-  deleteUser: (nic) => request(`/users/${nic}`, { method: 'DELETE' }),
-  adminUpdateUser: (nic, body) => request(`/users/admin/${nic}`, { method: 'PUT', body: JSON.stringify(body) }),
 }
 
 export const stationsApi = {
-  list: () => request('/stations'),
-  get: (id) => request(`/stations/${id}`),
+  list: (includeInactive = false) => listStations(includeInactive),
+  listAll: () => listStations(true),
+  delete: (id) => request(`/stations/${id}`, { method: 'DELETE' }),
+  get: async (id) => normalizeStation(await request(`/stations/${id}`)),
   create: (body) => request('/stations', { method: 'POST', body: JSON.stringify(body) }),
   update: (id, body) =>
     request(`/stations/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deactivate: (id) => request(`/stations/${id}/deactivate`, { method: 'PATCH' }),
+  activate: (id) => request(`/stations/${id}/activate`, { method: 'PATCH' }),
   nearby: ({ latitude, longitude, radiusKm }) =>
     request(
       `/stations/nearby?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}&radiusKm=${encodeURIComponent(radiusKm)}`,

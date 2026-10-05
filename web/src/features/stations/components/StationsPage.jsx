@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { stationsApi } from '../../../api.js'
 import { useAuth } from '../../../auth/AuthContext'
 import LocationPickerMap from '../../../components/LocationPickerMap.jsx'
@@ -75,8 +75,15 @@ function fieldClass() {
   return 'h-11 w-full rounded-lg bg-surface-container-lowest px-3.5 text-body-sm text-on-surface shadow-sm outline-none focus:ring-2 focus:ring-primary-container'
 }
 
+function stationIsActive(station) {
+  const active = station?.isActive ?? station?.IsActive
+  return active !== false
+}
+
 export default function StationsPage() {
   const { user } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const viewOnly = user?.role === 'GRID_OPERATOR'
   const [stations, setStations] = useState([])
   const [query, setQuery] = useState('')
@@ -86,7 +93,7 @@ export default function StationsPage() {
   const [schedules, setSchedules] = useState(() => mergeWeek([]))
   const [editingDay, setEditingDay] = useState('')
   const [notice, setNotice] = useState(null)
-  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState(null)
   const [loading, setLoading] = useState(false)
   const openRequest = useRef(0)
 
@@ -98,16 +105,19 @@ export default function StationsPage() {
     )
   }, [stations, query])
 
-  const totalCapacity = stations.reduce((sum, station) => sum + Number(station.capacityKw || 0), 0)
-  const totalSlots = stations.reduce((sum, station) => sum + Number(station.batteryStorageSlots || 0), 0)
+  const activeStations = stations.filter((station) => stationIsActive(station))
+  const inactiveCount = stations.length - activeStations.length
+  const totalCapacity = activeStations.reduce((sum, station) => sum + Number(station.capacityKw || 0), 0)
+  const totalSlots = activeStations.reduce((sum, station) => sum + Number(station.batteryStorageSlots || 0), 0)
   const selected = stations.find((station) => station.id === selectedId)
+  const selectedActive = stationIsActive(selected)
 
   function toast(type, text) {
     setNotice({ type, text })
   }
 
   async function loadStations(keepId = selectedId) {
-    const data = await stationsApi.list()
+    const data = await stationsApi.listAll()
     setStations(data)
     return data.find((station) => station.id === keepId) ? keepId : data[0]?.id || ''
   }
@@ -133,11 +143,18 @@ export default function StationsPage() {
   }
 
   useEffect(() => {
-    loadStations('')
-      .then((id) => {
-        if (id) return openStation(id)
+    const incoming = location.state?.notice
+    const createdId = location.state?.selectStationId
+    loadStations(createdId || '')
+      .then(async (id) => {
+        const openId = createdId || id
+        if (openId) await openStation(openId)
+        if (incoming) toast(incoming.type, incoming.text)
       })
       .catch((error) => toast('error', error.message))
+    if (incoming || createdId) {
+      navigate(location.pathname, { replace: true, state: {} })
+    }
   }, [])
 
   async function handleUpdate(event) {
@@ -186,16 +203,80 @@ export default function StationsPage() {
   }
 
   async function confirmDeactivate() {
-    setConfirmOpen(false)
+    setConfirmAction(null)
     setLoading(true)
     try {
       await stationsApi.deactivate(selectedId)
+      // Keep the station visible as Inactive (delete is what removes it from the list).
+      setStations((current) =>
+        current.map((station) =>
+          station.id === selectedId ? { ...station, isActive: false } : station,
+        ),
+      )
+      try {
+        await loadStations(selectedId)
+      } catch {
+        // Local inactive state already applied if managed list is unavailable.
+      }
+      setShowEdit(false)
+      toast('ok', 'Station deactivated successfully.')
+    } catch (error) {
+      const message =
+        error?.message ||
+        error?.data?.message ||
+        error?.data?.Message ||
+        'Station cannot be deactivated because active reservations exist.'
+      toast('error', message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function confirmActivate() {
+    setConfirmAction(null)
+    setLoading(true)
+    try {
+      await stationsApi.activate(selectedId)
+      setStations((current) =>
+        current.map((station) =>
+          station.id === selectedId ? { ...station, isActive: true } : station,
+        ),
+      )
+      try {
+        await loadStations(selectedId)
+      } catch {
+        // Local active state already applied.
+      }
+      await openStation(selectedId, { edit: true })
+      toast('ok', 'Station activated successfully.')
+    } catch (error) {
+      const message =
+        error?.message ||
+        error?.data?.message ||
+        error?.data?.Message ||
+        'Could not activate station.'
+      toast('error', message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function confirmDelete() {
+    setConfirmAction(null)
+    setLoading(true)
+    try {
+      await stationsApi.delete(selectedId)
       const nextId = await loadStations('')
       if (nextId) await openStation(nextId)
       else setSelectedId('')
-      toast('ok', 'Station deactivated.')
+      toast('ok', 'Station deleted successfully.')
     } catch (error) {
-      toast('error', error.message)
+      const message =
+        error?.message ||
+        error?.data?.message ||
+        error?.data?.Message ||
+        'Station cannot be deleted because active reservations exist.'
+      toast('error', message)
     } finally {
       setLoading(false)
     }
@@ -205,30 +286,34 @@ export default function StationsPage() {
     <div className="flex w-full flex-col gap-8">
       {notice && (
         <div
-          className={`flex items-center justify-between rounded-xl border-l-4 bg-surface-container-lowest px-4 py-3 shadow-md ${
-            notice.type === 'error' ? 'border-[#B91C1C]' : 'border-primary'
+          role={notice.type === 'error' ? 'alert' : 'status'}
+          className={`fixed top-28 right-0 left-0 z-50 flex items-center justify-between gap-3 px-5 py-3.5 shadow-lg lg:top-14 lg:left-60 ${
+            notice.type === 'error'
+              ? 'bg-[#B91C1C] text-white'
+              : 'bg-[#15803D] text-white'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                notice.type === 'error' ? 'bg-[#FEE2E2]' : 'bg-[#DCFCE7]'
-              }`}
-            >
-              <span
-                className={`material-symbols-outlined text-[18px] ${
-                  notice.type === 'error' ? 'text-[#B91C1C]' : 'text-[#15803D]'
-                }`}
-              >
-                {notice.type === 'error' ? 'error' : 'check_circle'}
-              </span>
-            </div>
-            <p className="font-medium text-on-surface">{notice.text}</p>
+          <div
+            className={`pointer-events-none absolute inset-y-0 left-0 w-3 ${
+              notice.type === 'error' ? 'bg-[#7F1D1D]' : 'bg-[#14532D]'
+            }`}
+          />
+          <div
+            className={`pointer-events-none absolute inset-y-0 right-0 w-3 ${
+              notice.type === 'error' ? 'bg-[#7F1D1D]' : 'bg-[#14532D]'
+            }`}
+          />
+          <div className="relative z-[1] flex min-w-0 items-center gap-3 pl-2">
+            <span className="material-symbols-outlined shrink-0 text-[22px]">
+              {notice.type === 'error' ? 'error' : 'check_circle'}
+            </span>
+            <p className="text-sm font-semibold tracking-wide sm:text-[15px]">{notice.text}</p>
           </div>
           <button
             type="button"
-            className="rounded-lg p-1.5 text-secondary hover:bg-surface-container hover:text-on-surface"
+            className="relative z-[1] shrink-0 rounded-md p-1.5 text-white/85 hover:bg-white/15 hover:text-white"
             onClick={() => setNotice(null)}
+            aria-label="Dismiss notice"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
@@ -295,10 +380,18 @@ export default function StationsPage() {
                 </span>
                 <h2 className="font-headline-md text-headline-md font-semibold text-on-surface">All stations</h2>
               </div>
-              <span className="flex items-center gap-1.5 rounded-full bg-[#DCFCE7] px-2.5 py-0.5 text-label-sm font-semibold text-[#15803D]">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#15803D]" />
-                {stations.length} Active
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="flex items-center gap-1.5 rounded-full bg-[#DCFCE7] px-2.5 py-0.5 text-label-sm font-semibold text-[#15803D]">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#15803D]" />
+                  {activeStations.length} Active
+                </span>
+                {inactiveCount > 0 && (
+                  <span className="flex items-center gap-1.5 rounded-full bg-[#FEE2E2] px-2.5 py-0.5 text-label-sm font-semibold text-[#B91C1C]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#B91C1C]" />
+                    {inactiveCount} Inactive
+                  </span>
+                )}
+              </div>
             </div>
             <p className="-mt-2 text-secondary">
               {viewOnly ? 'Select a station to view its details.' : 'Select a station to update its details.'}
@@ -318,6 +411,7 @@ export default function StationsPage() {
               )}
               {visibleStations.map((station) => {
                 const active = station.id === selectedId
+                const live = stationIsActive(station)
                 return (
                   <div
                     key={station.id}
@@ -334,7 +428,9 @@ export default function StationsPage() {
                     className={`flex cursor-pointer flex-col gap-2.5 rounded-2xl p-4 text-left transition ${
                       active
                         ? 'border-2 border-[#FFDD19] bg-[#FFFBEB]'
-                        : 'border border-[#E2E8F0] bg-white hover:border-[#FFDD19]'
+                        : live
+                          ? 'border border-[#E2E8F0] bg-white hover:border-[#FFDD19]'
+                          : 'border border-[#FECACA] bg-[#FFF5F5] hover:border-[#F87171]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -354,8 +450,8 @@ export default function StationsPage() {
                         {!viewOnly && (
                           <button
                             type="button"
-                            aria-label={`Edit ${station.name}`}
-                            title="Edit station"
+                            aria-label={live ? `Edit ${station.name}` : `Manage ${station.name}`}
+                            title={live ? 'Edit station' : 'Manage inactive station'}
                             onClick={(event) => {
                               event.stopPropagation()
                               openStation(station.id, { edit: true }).catch((error) => toast('error', error.message))
@@ -365,10 +461,17 @@ export default function StationsPage() {
                             <span className="material-symbols-outlined text-[18px]">edit</span>
                           </button>
                         )}
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[#DCFCE7] px-2 py-0.5 text-label-sm font-semibold text-[#15803D]">
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#15803D]" />
-                          Active
-                        </span>
+                        {live ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#DCFCE7] px-2 py-0.5 text-label-sm font-semibold text-[#15803D]">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#15803D]" />
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#FEE2E2] px-2 py-0.5 text-label-sm font-semibold text-[#B91C1C]">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#B91C1C]" />
+                            Inactive
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="mt-1 flex items-center justify-between border-t border-outline-variant/20 pt-2 text-label-sm font-medium text-on-surface-variant">
@@ -397,7 +500,18 @@ export default function StationsPage() {
                   <span className="material-symbols-outlined text-[22px]">visibility</span>
                 </div>
                 <div>
-                  <h2 className="font-headline-md text-headline-md font-semibold">{selected.name}</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="font-headline-md text-headline-md font-semibold">{selected.name}</h2>
+                    {selectedActive ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#DCFCE7] px-2 py-0.5 text-label-sm font-semibold text-[#15803D]">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#FEE2E2] px-2 py-0.5 text-label-sm font-semibold text-[#B91C1C]">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
                   <p className="text-secondary">Station details are view only.</p>
                 </div>
               </div>
@@ -452,7 +566,11 @@ export default function StationsPage() {
                     </div>
                     <div>
                       <h2 className="font-headline-md text-headline-md font-semibold">Edit station</h2>
-                      <p className="text-secondary">Update station details, weekly hours, or deactivate it.</p>
+                      <p className="text-secondary">
+                        {selectedActive
+                          ? 'Update station details, weekly hours, deactivate, or delete the station.'
+                          : 'Activate this station to make it available again, or delete it permanently.'}
+                      </p>
                     </div>
                   </div>
                   <button
@@ -584,16 +702,52 @@ export default function StationsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-4 border-t border-outline-variant/20 pt-4">
-                    <button
-                      type="button"
-                      disabled={loading}
-                      onClick={() => setConfirmOpen(true)}
-                      className="flex h-11 items-center gap-2 rounded-lg bg-[#FEE2E2] px-5 text-label-md font-semibold text-[#B91C1C]"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
-                      Deactivate station
-                    </button>
-                    <button type="submit" disabled={loading} className="flex h-11 items-center gap-2 rounded-lg bg-primary-container px-6 text-label-md font-semibold text-on-primary-container">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {selectedActive ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={() => setConfirmAction('deactivate')}
+                            className="flex h-11 items-center gap-2 rounded-lg bg-[#FEF3C7] px-5 text-label-md font-semibold text-[#92400E]"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
+                            Deactivate station
+                          </button>
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={() => setConfirmAction('delete')}
+                            className="flex h-11 items-center gap-2 rounded-lg bg-[#FEE2E2] px-5 text-label-md font-semibold text-[#B91C1C]"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                            Delete station
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={() => setConfirmAction('activate')}
+                            className="flex h-11 items-center gap-2 rounded-lg bg-[#DCFCE7] px-5 text-label-md font-semibold text-[#15803D]"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                            Activate station
+                          </button>
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={() => setConfirmAction('delete')}
+                            className="flex h-11 items-center gap-2 rounded-lg bg-[#FEE2E2] px-5 text-label-md font-semibold text-[#B91C1C]"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                            Delete station
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <button type="submit" disabled={loading || !selectedActive} className="flex h-11 items-center gap-2 rounded-lg bg-primary-container px-6 text-label-md font-semibold text-on-primary-container disabled:opacity-50">
                       <span className="material-symbols-outlined text-[18px]">save</span>
                       Save changes
                     </button>
@@ -604,28 +758,66 @@ export default function StationsPage() {
         </div>
       </div>
 
-      {confirmOpen && (
+      {confirmAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-on-surface/40 p-4 backdrop-blur-sm">
           <div className="flex w-full max-w-md flex-col gap-5 rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-6 shadow-xl">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FEE2E2] text-[#B91C1C]">
-              <span className="material-symbols-outlined text-[26px]">warning</span>
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                confirmAction === 'activate'
+                  ? 'bg-[#DCFCE7] text-[#15803D]'
+                  : confirmAction === 'deactivate'
+                    ? 'bg-[#FEF3C7] text-[#92400E]'
+                    : 'bg-[#FEE2E2] text-[#B91C1C]'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[26px]">
+                {confirmAction === 'activate' ? 'check_circle' : 'warning'}
+              </span>
             </div>
             <div className="flex flex-col gap-2">
               <h3 className="font-headline-md text-headline-md font-semibold">
-                Deactivate {editForm.name}?
+                {confirmAction === 'activate'
+                  ? `Activate ${editForm.name}?`
+                  : confirmAction === 'deactivate'
+                    ? `Deactivate ${editForm.name}?`
+                    : `Delete ${editForm.name}?`}
               </h3>
               <p className="text-secondary">
-                The station is deactivated only when it has no reserved bookings. If reservations exist, the request is rejected.
+                {confirmAction === 'activate'
+                  ? 'The station will be marked Active and available for booking and nearby search again.'
+                  : confirmAction === 'deactivate'
+                    ? 'The station stays in the list as inactive and is hidden from booking and nearby search. Blocked if active energy reservations exist.'
+                    : 'The station is permanently removed from the system. Blocked if active energy reservations exist.'}
               </p>
             </div>
             <div className="flex justify-end gap-3">
-              <button type="button" className="h-11 rounded-lg bg-surface-container px-5" onClick={() => setConfirmOpen(false)}>
-                Keep station
+              <button type="button" className="h-11 rounded-lg bg-surface-container px-5" onClick={() => setConfirmAction(null)}>
+                Cancel
               </button>
-              <button type="button" className="flex h-11 items-center gap-2 rounded-lg bg-[#B91C1C] px-6 font-semibold text-white" onClick={confirmDeactivate}>
-                <span className="material-symbols-outlined text-[18px]">power_off</span>
-                Deactivate
-              </button>
+              {confirmAction === 'activate' ? (
+                <button
+                  type="button"
+                  className="flex h-11 items-center gap-2 rounded-lg bg-[#15803D] px-6 font-semibold text-white"
+                  onClick={confirmActivate}
+                >
+                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                  Activate
+                </button>
+              ) : confirmAction === 'deactivate' ? (
+                <button
+                  type="button"
+                  className="flex h-11 items-center gap-2 rounded-lg bg-[#92400E] px-6 font-semibold text-white"
+                  onClick={confirmDeactivate}
+                >
+                  <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
+                  Deactivate
+                </button>
+              ) : (
+                <button type="button" className="flex h-11 items-center gap-2 rounded-lg bg-[#B91C1C] px-6 font-semibold text-white" onClick={confirmDelete}>
+                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                  Delete station
+                </button>
+              )}
             </div>
           </div>
         </div>
