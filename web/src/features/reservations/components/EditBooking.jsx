@@ -1,3 +1,6 @@
+// EditBooking.jsx — Web desk form that changes the station or slot of an existing booking.
+// Author: M.T.C PEIRIS  it23201200
+
 import { useState } from 'react';
 import { formatDateTime, formatLongDate, formatMonth, formatTimeRange } from '../format';
 import { useNow, useReservation, useStationSlots } from '../hooks';
@@ -20,6 +23,7 @@ import {
   ValueStack,
 } from './ui';
 
+// Loads a reservation and lets staff move it to another slot.
 export default function EditBooking({ reservationId, refData, onBack, onUpdated }) {
   const now = useNow();
   const { summary, error: loadError, loading } = useReservation(reservationId);
@@ -49,12 +53,14 @@ export default function EditBooking({ reservationId, refData, onBack, onUpdated 
   const newSlot = slots.find((item) => item.id === slotId);
   const canSubmit = changeWindow.allowed && newSlot && !submitting;
 
+  // Selects a different station and clears the current slot choice.
   function handleStationChange(id) {
     setChosenStationId(id);
     setSlotId('');
     setError(null);
   }
 
+  // Saves the new slot and opens the change summary.
   async function handleSubmit(event) {
     event.preventDefault();
     if (!canSubmit) return;

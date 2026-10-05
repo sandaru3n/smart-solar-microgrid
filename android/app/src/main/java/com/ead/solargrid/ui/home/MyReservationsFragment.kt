@@ -1,3 +1,10 @@
+/**
+ * File: MyReservationsFragment.kt
+ * Purpose: Prosumer flow to create, change and cancel a reservation, including the booking summary.
+ * Author: M.T.C PEIRIS  it23201200
+ * Date: 2026
+ */
+
 package com.ead.solargrid.ui.home
 
 import android.app.Dialog
@@ -71,6 +78,7 @@ class MyReservationsFragment : Fragment() {
     private var slotsFetchJob: Job? = null
     private var slotsLoadingStationId: String? = null
 
+    // Inflates the bookings screen.
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -80,6 +88,7 @@ class MyReservationsFragment : Fragment() {
         return binding.root
     }
 
+    // Wires the create, filter, search and booking-step actions.
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -120,6 +129,7 @@ class MyReservationsFragment : Fragment() {
         prefetchStationsQuietly()
     }
 
+    // Reloads the list when the bookings tab becomes visible again.
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
         if (!hidden) {
@@ -127,6 +137,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Refreshes bookings when the screen returns to the foreground.
     override fun onResume() {
         super.onResume()
         if (!isHidden && step == Step.LIST) {
@@ -134,6 +145,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Starts a new booking when requested, otherwise shows the list.
     private fun onBookingsTabSelected() {
         if ((activity as? ProsumerHomeActivity)?.consumePendingNewBooking() == true) {
             startCreateBooking()
@@ -145,6 +157,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Opens the station step for a new reservation.
     private fun startCreateBooking() {
         editingReservation = null
         selectedStation = null
@@ -155,6 +168,7 @@ class MyReservationsFragment : Fragment() {
         goToStep(Step.STATION)
     }
 
+    // Opens the station step to change an existing reservation.
     private fun startEditBooking(item: ReservationItem) {
         editingReservation = item
         selectedSlot = null
@@ -166,6 +180,7 @@ class MyReservationsFragment : Fragment() {
         goToStep(Step.STATION)
     }
 
+    // Clears the wizard and shows the bookings list again.
     private fun returnToBookingsList() {
         editingReservation = null
         selectedStation = null
@@ -176,6 +191,7 @@ class MyReservationsFragment : Fragment() {
         goToStep(Step.LIST)
     }
 
+    // Sets the step numbers and titles for station, slot and summary.
     private fun setupStepHeaders() {
         binding.headerStation.tvStepNumber.text = "1"
         binding.headerStation.tvStepTitle.setText(R.string.booking_available_stations)
@@ -187,6 +203,7 @@ class MyReservationsFragment : Fragment() {
         styleSummaryStepAsideBadge()
     }
 
+    // Styles the summary step label.
     private fun styleSummaryStepAsideBadge() {
         val aside = binding.headerSummary.tvStepAside
         aside.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
@@ -196,6 +213,7 @@ class MyReservationsFragment : Fragment() {
         aside.setPadding(h, v, h, v)
     }
 
+    // Moves back one booking step, or closes the wizard from the station step.
     private fun onBackPressed() {
         when (step) {
             Step.STATION -> returnToBookingsList()
@@ -205,6 +223,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Moves from the selected station to slots, then to the summary.
     private fun onContinue() {
         when (step) {
             Step.STATION -> {
@@ -228,11 +247,13 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Stores the current wizard step.
     private fun goToStep(next: Step) {
         step = next
         showStep(next)
     }
 
+    // Shows the list, station, slot or summary panel for the current step.
     private fun showStep(current: Step) {
         val isList = current == Step.LIST
         binding.stepList.isVisible = isList
@@ -299,6 +320,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Shows a rounded dialog for filter, cancel and message cards.
     private fun showRoundedDialog(content: android.view.View): Dialog {
         val dialog = Dialog(requireContext())
         dialog.setContentView(content)
@@ -311,6 +333,7 @@ class MyReservationsFragment : Fragment() {
         return dialog
     }
 
+    // Lets the prosumer show pending, approved, or both bookings.
     private fun showBookingFilter() {
         val dialogBinding = DialogBookingFilterBinding.inflate(layoutInflater)
         val dialog = showRoundedDialog(dialogBinding.root)
@@ -341,6 +364,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Loads the prosumer's pending and approved reservations.
     private fun loadPendingBookings() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -363,6 +387,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Applies the status filter and the search text to the loaded bookings.
     private fun visibleBookings(): List<ReservationItem> {
         val query = bookingQuery.trim()
         return pendingItems.filter { item ->
@@ -375,6 +400,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Matches a booking by station, status, time or reference.
     private fun matchesBookingQuery(item: ReservationItem, query: String): Boolean {
         if (query.isEmpty()) return true
         val station = item.stationName ?: item.stationId
@@ -387,6 +413,7 @@ class MyReservationsFragment : Fragment() {
             whenText.contains(query, ignoreCase = true)
     }
 
+    // Draws the filtered booking cards.
     private fun renderPendingBookings() {
         val userName = SessionManager(requireContext()).getUserSession()?.name
         val sorted = visibleBookings().sortedByDescending { item ->
@@ -427,6 +454,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Offers change and cancel when the 12-hour rule still allows it.
     private fun openBookingActions(item: ReservationItem) {
         val blocked = BookingRules.changeBlockedReason(item.status, item.slotStartTimeUtc)
         if (blocked != null) {
@@ -453,6 +481,7 @@ class MyReservationsFragment : Fragment() {
         actionsBinding.btnCloseActions.setOnClickListener { dialog.dismiss() }
     }
 
+    // Asks the prosumer to confirm cancellation.
     private fun confirmCancelBooking(item: ReservationItem) {
         val cancelBinding = DialogBookingCancelBinding.inflate(layoutInflater)
         val dialog = showRoundedDialog(cancelBinding.root)
@@ -463,6 +492,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Cancels the reservation and releases its slot space.
     private fun cancelBooking(item: ReservationItem) {
         val blocked = BookingRules.changeBlockedReason(item.status, item.slotStartTimeUtc)
         if (blocked != null) {
@@ -496,6 +526,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Filters stations by the typed name or address.
     private fun filteredStations(): List<SolarStation> {
         val query = binding.etStationSearch.text?.toString()?.trim()?.lowercase(Locale.getDefault()).orEmpty()
         if (query.isEmpty()) return stations
@@ -505,11 +536,13 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Shows how many stations match the search.
     private fun updateStationCountLabel() {
         binding.headerStation.tvStepAside.text =
             getString(R.string.booking_active_stations_count, filteredStations().size)
     }
 
+    // Shows the station list after it has loaded.
     /** Show cached stations instantly; only hit the network when the cache is empty. */
     private fun presentStationStep() {
         binding.tvStationsError.isVisible = false
@@ -528,12 +561,14 @@ class MyReservationsFragment : Fragment() {
         fetchStations(showBlockingLoader = true)
     }
 
+    // Loads stations in the background before the station step opens.
     /** Load stations in the background while the user is on the bookings list. */
     private fun prefetchStationsQuietly() {
         if (stations.isNotEmpty() || stationsFetchJob?.isActive == true) return
         fetchStations(showBlockingLoader = false)
     }
 
+    // Loads active stations for the booking wizard.
     private fun fetchStations(showBlockingLoader: Boolean) {
         if (showBlockingLoader && _binding != null) {
             binding.progressStations.isVisible = true
@@ -581,6 +616,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Draws one card for each station that matches the search.
     private fun renderStationCards() {
         val visible = filteredStations()
         binding.stationList.removeAllViews()
@@ -609,6 +645,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Updates which station card is selected.
     private fun refreshStationCardSelection() {
         for (i in 0 until binding.stationList.childCount) {
             val root = binding.stationList.getChildAt(i)
@@ -618,6 +655,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Highlights the station search field while it is focused.
     private fun applyStationSearchStroke(focused: Boolean) {
         if (_binding == null) return
         val density = resources.displayMetrics.density
@@ -633,6 +671,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Paints the selected or unselected station card.
     private fun applyStationCardSelection(
         cardBinding: ItemBookingStationCardBinding,
         selected: Boolean
@@ -653,12 +692,14 @@ class MyReservationsFragment : Fragment() {
         cardBinding.stationCardRoot.translationZ = if (selected) 2f else 0f
     }
 
+    // Loads slots for a station before the slot step opens.
     private fun prefetchSlotsForStation(stationId: String) {
         if (slotsByStationId.containsKey(stationId)) return
         if (slotsLoadingStationId == stationId && slotsFetchJob?.isActive == true) return
         fetchSlotsForStation(stationId, showBlockingLoader = false)
     }
 
+    // Shows the day chips and slots for the selected station.
     private fun presentSlotStep() {
         val station = selectedStation ?: return
         binding.tvSlotsPlaceholder.isVisible = false
@@ -678,6 +719,7 @@ class MyReservationsFragment : Fragment() {
         fetchSlotsForStation(station.id, showBlockingLoader = true)
     }
 
+    // Loads the station schedule and bookable slots.
     private fun fetchSlotsForStation(stationId: String, showBlockingLoader: Boolean) {
         if (showBlockingLoader && _binding != null) {
             binding.progressSlots.isVisible = true
@@ -715,6 +757,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Draws the days inside the seven-day booking window.
     private fun buildDayChips() {
         binding.dayChipRow.removeAllViews()
         val days = (0 until 8).map { LocalDate.now().plusDays(it.toLong()) }
@@ -765,6 +808,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Updates which day chip is selected.
     private fun refreshDayChipSelection() {
         val key = selectedDayKey ?: return
         val density = resources.displayMetrics.density
@@ -785,12 +829,14 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Shows the selected date beside the slot step title.
     private fun updateSlotStepAside() {
         val dayKey = selectedDayKey ?: return
         val count = loadedSlots.count { StationSlotBuilder.dayKey(it.startTimeUtc) == dayKey }
         binding.headerSlot.tvStepAside.text = getString(R.string.booking_slots_on_day, count)
     }
 
+    // Finds the first day that still has an open slot.
     private fun firstOpenDayKey(): String? {
         val station = selectedStation ?: return null
         val now = System.currentTimeMillis()
@@ -802,6 +848,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Draws the slots for the selected day.
     private fun renderSlotsForSelectedDay() {
         val station = selectedStation ?: return
         val dayKey = selectedDayKey ?: return
@@ -852,6 +899,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Paints the selected or unselected slot card.
     private fun applySlotCardSelection(row: ItemBookingSlotRowBinding, selected: Boolean) {
         row.radioInner.isVisible = selected
         row.radioOuter.setBackgroundResource(
@@ -868,6 +916,7 @@ class MyReservationsFragment : Fragment() {
         row.slotCardRoot.cardElevation = if (selected) 8f else 2f
     }
 
+    // Updates which slot card is selected.
     private fun refreshSlotCardSelection() {
         val selected = selectedSlot ?: return
         val selectedKey = "${selected.id}|${selected.startTimeUtc}"
@@ -878,6 +927,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Fills the booking summary before create or update is confirmed.
     private fun populateSummary() {
         val user = SessionManager(requireContext()).getUserSession()
         val station = selectedStation
@@ -911,12 +961,14 @@ class MyReservationsFragment : Fragment() {
 
     private var summaryErrorAction = SummaryErrorAction.NONE
 
+    // Hides a previous create or update error.
     private fun hideSummaryBookingError() {
         if (_binding == null) return
         binding.summaryErrorCard.isVisible = false
         summaryErrorAction = SummaryErrorAction.NONE
     }
 
+    // Shows why create or update was rejected.
     private fun showSummaryBookingError(rawMessage: String?) {
         val message = parseApiErrorMessage(rawMessage)
         val lower = message.lowercase(Locale.getDefault())
@@ -950,6 +1002,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Follows the action offered on a booking error.
     private fun onSummaryErrorAction() {
         when (summaryErrorAction) {
             SummaryErrorAction.VIEW_BOOKINGS -> returnToBookingsList()
@@ -961,6 +1014,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Reads the message from an API error body.
     private fun parseApiErrorMessage(raw: String?): String {
         if (raw.isNullOrBlank()) return getString(R.string.booking_failed)
         val trimmed = raw.trim()
@@ -971,6 +1025,7 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Creates a new reservation or saves a changed one.
     private fun confirmBooking() {
         if (submitting) return
         val station = selectedStation ?: return
@@ -1021,16 +1076,19 @@ class MyReservationsFragment : Fragment() {
         }
     }
 
+    // Returns the current month label.
     private fun monthLabel(): String {
         return LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()))
     }
 
+    // Formats a slot date for the booking summary.
     private fun formatLongDate(iso: String?): String {
         val instant = BookingRules.parseInstant(iso) ?: return "—"
         val zoned = instant.atZone(ZoneId.of("Asia/Colombo"))
         return zoned.format(DateTimeFormatter.ofPattern("EEE, MMM d, yyyy", Locale.getDefault()))
     }
 
+    // Releases the screen binding.
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

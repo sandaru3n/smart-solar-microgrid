@@ -1,3 +1,6 @@
+// CreateBooking.jsx — Web desk form that creates a booking on behalf of a prosumer.
+// Author: M.T.C PEIRIS  it23201200
+
 import { useEffect, useState } from 'react';
 import { reservationsApi, stationsApi, usersApi } from '../../../api.js';
 import { formatDate, formatLongDate, formatMonth, formatTimeRange, initials } from '../format';
@@ -22,6 +25,7 @@ import {
 
 const IDLE = { status: 'idle', prosumer: null, error: null };
 
+// Collects the prosumer, station and slot, then creates the reservation.
 export default function CreateBooking({ onBack, onCreated }) {
   const now = useNow();
   const [nicInput, setNicInput] = useState('');
@@ -90,11 +94,13 @@ export default function CreateBooking({ onBack, onCreated }) {
 
   const canSubmit = prosumerActive && station && slot && !submitting;
 
+  // Stores the typed NIC and clears the previous lookup.
   function handleNicChange(value) {
     setNicInput(value);
     if (verification.status !== 'idle') setVerification(IDLE);
   }
 
+  // Looks up the prosumer account for the entered NIC.
   async function handleVerify() {
     const nic = nicInput.trim();
     if (!nic) return;
@@ -108,12 +114,14 @@ export default function CreateBooking({ onBack, onCreated }) {
     }
   }
 
+  // Selects a station and clears the previously chosen slot.
   function handleStationChange(id) {
     setStationId(id);
     setSlotId('');
     setError(null);
   }
 
+  // Creates the reservation and opens the booking summary.
   async function handleSubmit(event) {
     event.preventDefault();
     if (!canSubmit) return;

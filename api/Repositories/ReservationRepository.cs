@@ -1,3 +1,10 @@
+/**
+ * File: ReservationRepository.cs
+ * Purpose: MongoDB reads and capacity updates for energy reservations.
+ * Author: M.T.C PEIRIS  it23201200
+ * Date: 2026
+ */
+
 using MongoDB.Driver;
 using SolarGrid.Api.Data;
 using SolarGrid.Api.Models;
@@ -12,6 +19,7 @@ public class ReservationRepository
     private readonly IMongoCollection<SolarStation> _stations;
     private readonly IMongoCollection<StationSchedule> _schedules;
 
+    // Opens the reservation, slot, station and schedule collections.
     public ReservationRepository(MongoDbContext context)
     {
         _context = context;
@@ -21,9 +29,11 @@ public class ReservationRepository
         _schedules = context.Database.GetCollection<StationSchedule>("StationSchedules");
     }
 
+    // Starts a MongoDB session so capacity changes stay in one transaction.
     public Task<IClientSessionHandle> StartSessionAsync() =>
         _context.Client.StartSessionAsync();
 
+    // Loads one reservation by id.
     public async Task<EnergyReservation?> GetByIdAsync(
         string id,
         IClientSessionHandle? session = null)
@@ -36,9 +46,11 @@ public class ReservationRepository
         return await _reservations.Find(session, r => r.Id == id).FirstOrDefaultAsync();
     }
 
+    // Inserts a new reservation document.
     public Task InsertAsync(EnergyReservation reservation, IClientSessionHandle session) =>
         _reservations.InsertOneAsync(session, reservation);
 
+    // Saves a reservation only when its version has not changed.
     public async Task<EnergyReservation?> ReplaceIfVersionMatchesAsync(
         EnergyReservation reservation,
         long expectedVersion,
@@ -58,6 +70,7 @@ public class ReservationRepository
             });
     }
 
+    // Loads one energy booking slot.
     public async Task<EnergyBookingSlot?> GetSlotByIdAsync(
         string slotId,
         IClientSessionHandle? session = null)
@@ -70,6 +83,7 @@ public class ReservationRepository
         return await _slots.Find(session, s => s.Id == slotId).FirstOrDefaultAsync();
     }
 
+    // Loads one solar station.
     public async Task<SolarStation?> GetStationByIdAsync(
         string stationId,
         IClientSessionHandle? session = null)
@@ -82,6 +96,7 @@ public class ReservationRepository
         return await _stations.Find(session, s => s.Id == stationId).FirstOrDefaultAsync();
     }
 
+    // Loads the station schedule for one weekday.
     public async Task<StationSchedule?> GetScheduleForDayAsync(
         string stationId,
         DayOfWeek day,
@@ -99,6 +114,7 @@ public class ReservationRepository
         return await _schedules.Find(session, filter).FirstOrDefaultAsync();
     }
 
+    // Reserves one space only while the slot is not already full.
     /// <summary>
     /// Conditionally increments ReservedBookings only when capacity remains.
     /// </summary>
@@ -124,6 +140,7 @@ public class ReservationRepository
             });
     }
 
+    // Releases one reserved space on a slot.
     /// <summary>
     /// Decrements ReservedBookings once. Safe for idempotent cancel flows when
     /// status is checked before calling.
@@ -148,6 +165,7 @@ public class ReservationRepository
             });
     }
 
+    // Checks whether this prosumer already has an active booking for the slot.
     public async Task<bool> HasActiveForSlotAsync(
         string prosumerId,
         string slotId,
@@ -178,6 +196,7 @@ public class ReservationRepository
         return await _reservations.Find(session, filter).AnyAsync();
     }
 
+    // Lists the prosumer's pending and approved reservations.
     public async Task<List<EnergyReservation>> GetActiveByProsumerAsync(
         string prosumerId,
         string? excludeReservationId = null,
@@ -206,6 +225,7 @@ public class ReservationRepository
         return await _reservations.Find(session, filter).ToListAsync();
     }
 
+    // Checks whether the station still has an active reservation.
     /// <summary>
     /// Real active-reservation check for Member 2 station deactivation.
     /// </summary>

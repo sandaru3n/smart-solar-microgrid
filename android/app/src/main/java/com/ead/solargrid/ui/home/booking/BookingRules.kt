@@ -1,3 +1,10 @@
+/**
+ * File: BookingRules.kt
+ * Purpose: Client checks for the seven-day booking window, the 12-hour change rule and slot capacity.
+ * Author: M.T.C PEIRIS  it23201200
+ * Date: 2026
+ */
+
 package com.ead.solargrid.ui.home.booking
 
 import com.ead.solargrid.models.EnergyBookingSlotDto
@@ -11,6 +18,7 @@ object BookingRules {
 
     data class SlotAvailability(val bookable: Boolean, val reason: String?)
 
+    // Decides whether a slot can be booked right now.
     fun slotAvailability(slot: EnergyBookingSlotDto, station: SolarStation, nowMs: Long): SlotAvailability {
         val start = parseInstant(slot.startTimeUtc)?.toEpochMilli() ?: return SlotAvailability(false, "Invalid slot")
         if (!station.isActive) return SlotAvailability(false, "Station inactive")
@@ -21,6 +29,7 @@ object BookingRules {
         return SlotAvailability(true, null)
     }
 
+    // Returns why a booking can no longer be changed or cancelled.
     /**
      * Pending and Approved can be edited or cancelled only when more than 12 hours remain.
      * Returns a user-facing reason when the action must be rejected.
@@ -38,6 +47,7 @@ object BookingRules {
         return null
     }
 
+    // Parses a UTC timestamp from the API.
     fun parseInstant(value: String?): Instant? {
         if (value.isNullOrBlank()) return null
         return try {

@@ -1,3 +1,10 @@
+/**
+ * File: ReservationsController.cs
+ * Purpose: HTTP endpoints for creating, reading, updating and cancelling reservations.
+ * Author: M.T.C PEIRIS  it23201200
+ * Date: 2026
+ */
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolarGrid.Api.Services;
@@ -11,11 +18,13 @@ public class ReservationsController : ControllerBase
 {
     private readonly ReservationService _reservationService;
 
+    // Stores the booking service used by every reservation endpoint.
     public ReservationsController(ReservationService reservationService)
     {
         _reservationService = reservationService;
     }
 
+    // Creates a booking from the web desk on behalf of a prosumer.
     /// <summary>
     /// POST /api/reservations/desk — booking from the web desk, which has no login yet.
     /// Uses the same rules as a Backoffice user creating a reservation for a prosumer.
@@ -41,6 +50,7 @@ public class ReservationsController : ControllerBase
         }
     }
 
+    // Creates a booking for the signed-in prosumer, or for a chosen prosumer when staff is signed in.
     /// <summary>
     /// POST /api/reservations — create a booking.
     /// Only SlotId, optional StationId, and optional ProsumerId (staff) are used.
@@ -66,6 +76,7 @@ public class ReservationsController : ControllerBase
         }
     }
 
+    // Returns one reservation for the web desk summary and edit screens.
     /// <summary>
     /// GET /api/reservations/desk/{id} — booking details for the web desk.
     /// </summary>
@@ -83,6 +94,7 @@ public class ReservationsController : ControllerBase
         }
     }
 
+    // Changes the slot of a reservation from the web desk.
     /// <summary>
     /// PUT /api/reservations/desk/{id} — change a booking from the web desk.
     /// </summary>
@@ -107,6 +119,7 @@ public class ReservationsController : ControllerBase
         }
     }
 
+    // Cancels a reservation from the web desk and releases its slot space.
     /// <summary>
     /// PATCH /api/reservations/desk/{id}/cancel — cancel a booking from the web desk.
     /// </summary>
@@ -125,6 +138,7 @@ public class ReservationsController : ControllerBase
         }
     }
 
+    // Returns one reservation the caller is allowed to see.
     /// <summary>
     /// GET /api/reservations/{id} — booking details for edit/summary screens.
     /// </summary>
@@ -141,6 +155,7 @@ public class ReservationsController : ControllerBase
         }
     }
 
+    // Changes the slot of an eligible reservation.
     /// <summary>
     /// PUT /api/reservations/{id} — change slot on an eligible booking.
     /// Only SlotId, optional StationId, and optional Version are used.
@@ -165,6 +180,7 @@ public class ReservationsController : ControllerBase
         }
     }
 
+    // Cancels an eligible reservation and releases its slot space.
     /// <summary>
     /// PATCH /api/reservations/{id}/cancel — cancel an eligible booking.
     /// </summary>
@@ -182,6 +198,7 @@ public class ReservationsController : ControllerBase
         }
     }
 
+    // Maps a booking-rule failure to the matching HTTP status.
     private IActionResult Map(ReservationException ex) => ex.Kind switch
     {
         ReservationErrorKind.Unauthorized => Unauthorized(new { message = ex.Message }),

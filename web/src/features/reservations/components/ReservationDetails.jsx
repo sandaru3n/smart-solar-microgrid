@@ -1,3 +1,6 @@
+// ReservationDetails.jsx — Shows one booking and the actions to change, cancel or approve it.
+// Author: M.T.C PEIRIS  it23201200
+
 import { useState } from 'react';
 import { formatDateTime, formatDuration, formatLongDate, formatTimeRange } from '../format';
 import { useNow, useReservation } from '../hooks';
@@ -19,10 +22,12 @@ import {
   ValueStack,
 } from './ui';
 
+// Asks for confirmation before a booking is cancelled.
 function CancelDialog({ reservation, stationName, onKeep, onConfirmed }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  // Sends the confirmed cancel or reject request.
   async function handleConfirm() {
     setSubmitting(true);
     setError(null);
@@ -73,10 +78,12 @@ function CancelDialog({ reservation, stationName, onKeep, onConfirmed }) {
   );
 }
 
+// Asks for confirmation before a pending booking is rejected.
 function RejectDialog({ reservation, stationName, onKeep, onConfirmed }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  // Sends the confirmed cancel or reject request.
   async function handleConfirm() {
     setSubmitting(true);
     setError(null);
@@ -120,6 +127,7 @@ function RejectDialog({ reservation, stationName, onKeep, onConfirmed }) {
   );
 }
 
+// Loads one reservation and shows its details and allowed actions.
 export default function ReservationDetails({ reservationId, refData, onBack, onEdit, onCancelled }) {
   const now = useNow();
   const [confirming, setConfirming] = useState(false);
@@ -143,6 +151,7 @@ export default function ReservationDetails({ reservationId, refData, onBack, onE
   const pending = reservation.status === 'Pending';
   const station = refData.stationById.get(reservation.stationId);
 
+  // Approves a pending reservation from the details screen.
   async function handleApprove() {
     setDeciding(true);
     setDecisionError(null);

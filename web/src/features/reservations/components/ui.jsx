@@ -1,3 +1,6 @@
+// ui.jsx — Shared layout pieces for the web reservation screens.
+// Author: M.T.C PEIRIS  it23201200
+
 const STATUS_TEXT = {
   400: 'Bad request',
   401: 'Unauthorized',
@@ -13,6 +16,7 @@ const NOTICE_ICONS = {
   success: 'check_circle',
 };
 
+// Renders one Material icon.
 export function Icon({ name, className }) {
   return (
     <span className={['material-symbols-outlined', className].filter(Boolean).join(' ')} aria-hidden="true">
@@ -21,10 +25,12 @@ export function Icon({ name, className }) {
   );
 }
 
+// Shows the reservation status as a coloured label.
 export function StatusBadge({ status, label }) {
   return <span className={`rm-badge rm-badge--${status.toLowerCase()}`}>{label ?? status}</span>;
 }
 
+// Shows an information, warning or success message.
 export function Notice({ tone = 'info', title, children }) {
   return (
     <div className={`rm-notice rm-notice--${tone}`} role={tone === 'error' ? 'alert' : 'status'}>
@@ -37,6 +43,7 @@ export function Notice({ tone = 'info', title, children }) {
   );
 }
 
+// Shows an error returned by the booking API.
 export function ErrorNotice({ error }) {
   if (!error) return null;
 
@@ -49,6 +56,7 @@ export function ErrorNotice({ error }) {
   );
 }
 
+// Shows label and value rows on a summary or details screen.
 export function DetailList({ items, variant }) {
   return (
     <dl className={`rm-details${variant ? ` rm-details--${variant}` : ''}`}>
@@ -62,6 +70,7 @@ export function DetailList({ items, variant }) {
   );
 }
 
+// Shows a main value with a smaller line under it.
 export function ValueStack({ main, sub }) {
   return (
     <span className="rm-value-stack">
@@ -71,6 +80,7 @@ export function ValueStack({ main, sub }) {
   );
 }
 
+// Shows the screen title and the back action.
 export function PageHeader({ eyebrow, title, description, onBack, backLabel = 'Back', aside }) {
   return (
     <header className="rm-page-header">
@@ -99,6 +109,7 @@ export function PageHeader({ eyebrow, title, description, onBack, backLabel = 'B
   );
 }
 
+// Shows one summary figure, such as the booking window.
 export function HeaderStat({ icon, label, value, hint }) {
   return (
     <div className="rm-header-stat">
@@ -114,6 +125,7 @@ export function HeaderStat({ icon, label, value, hint }) {
   );
 }
 
+// Shows the current step number and title.
 export function StepHeader({ number, title, aside }) {
   return (
     <div className="rm-step-head">
@@ -126,6 +138,7 @@ export function StepHeader({ number, title, aside }) {
   );
 }
 
+// Shows the heading of a summary or form panel.
 export function PanelHeader({ eyebrow, title, icon }) {
   return (
     <div className="rm-panel-head">
@@ -142,6 +155,7 @@ export function PanelHeader({ eyebrow, title, icon }) {
   );
 }
 
+// Shows a loading indicator.
 export function Spinner({ label = 'Loading…' }) {
   return (
     <div className="rm-spinner" role="status">
@@ -151,10 +165,12 @@ export function Spinner({ label = 'Loading…' }) {
   );
 }
 
+// Shows the short reservation reference.
 export function Reference({ id }) {
   return <code className="rm-reference">{id}</code>;
 }
 
+// Shows the prosumer name, or the NIC when the name is missing.
 export function ProsumerLabel({ nic, prosumer }) {
   return <ValueStack main={prosumer?.name ?? 'Unknown prosumer'} sub={`NIC ${nic}`} />;
 }
