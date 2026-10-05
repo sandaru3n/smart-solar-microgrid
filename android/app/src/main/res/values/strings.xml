@@ -75,6 +75,8 @@
     <string name="register_toggle_password">Show or hide password</string>
     <string name="bookings_title">Bookings</string>
     <string name="bookings_subtitle">Pending and approved reservations</string>
+    <string name="bookings_search_hint">Search station or booking</string>
+    <string name="bookings_search_empty">No bookings match your search.</string>
     <string name="bookings_filter">Filter</string>
     <string name="bookings_filter_title">Filter bookings</string>
     <string name="bookings_filter_hint">Choose which bookings to show</string>
