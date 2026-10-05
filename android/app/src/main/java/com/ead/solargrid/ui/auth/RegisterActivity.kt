@@ -1,3 +1,8 @@
+/*
+ * File: RegisterActivity.kt
+ * Description: Provides the Prosumer registration form, captures NIC documents, and initiates the registration flow.
+ * Author: IT23163904_WVADK Chamara
+ */
 package com.ead.solargrid.ui.auth
 
 import android.app.Activity
@@ -45,6 +50,7 @@ class RegisterActivity : AppCompatActivity() {
     private var selectedFileUri: Uri? = null
     private lateinit var tvDocName: TextView
 
+    // Initializes the registration UI, configures validation listeners, and handles the submit action.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
@@ -146,6 +152,7 @@ class RegisterActivity : AppCompatActivity() {
         return result ?: "document"
     }
 
+    // Uploads the selected NIC document to Cloudinary and passes the URL to the backend registration method.
     private fun submitRegistration(name: String, nic: String, email: String, pass: String, phone: String, address: String) {
         val btnRegister = findViewById<Button>(R.id.btnRegister)
         btnRegister.isEnabled = false
@@ -179,6 +186,7 @@ class RegisterActivity : AppCompatActivity() {
             }).dispatch()
     }
 
+    // Submits the finalized registration details including the NIC URL to the Member 1 backend API.
     private fun sendRegistrationToBackend(name: String, nic: String, email: String, pass: String, phone: String, address: String, nicUrl: String) {
         lifecycleScope.launch {
             try {

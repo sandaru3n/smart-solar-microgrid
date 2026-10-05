@@ -1,3 +1,8 @@
+/*
+ * File: api.js
+ * Description: Contains centralized API integration logic, including Member 1's Authentication and User Management services.
+ * Author: IT23163904_WVADK Chamara (Auth, Users, Deactivation integrations)
+ */
 /**
  * Error thrown for failed API calls. `message` is unchanged from before;
  * `status` (0 = network failure) and `data` (parsed body) are extra details.
@@ -80,12 +85,14 @@ async function listStations(includeInactive) {
   return data.map(normalizeStation)
 }
 
+// Member 1 API bindings for User Authentication and password recovery.
 export const authApi = {
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   forgotPassword: (body) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify(body) }),
   resetPassword: (body) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify(body) }),
 }
 
+// Member 1 API bindings for User Management, Profile Management, and Account Statuses.
 export const usersApi = {
   getAll: () => request('/users'),
   getProfile: (nic) => request(`/users/${nic}`),
@@ -160,6 +167,7 @@ export const reservationsApi = {
     }),
 }
 
+// Member 1 API bindings for handling Prosumer deactivation requests by the Backoffice.
 export const deactivationRequestsApi = {
   getPending: () => request('/deactivation-requests/pending'),
   approve: (id) => request(`/deactivation-requests/${id}/approve`, { method: 'PATCH' }),

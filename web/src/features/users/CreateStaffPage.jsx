@@ -1,3 +1,8 @@
+/*
+ * File: CreateStaffPage.jsx
+ * Description: Provides a form for Backoffice administrators to create new Backoffice or Grid Operator user accounts directly without OTP verification.
+ * Author: IT23163904_WVADK Chamara
+ */
 import { useState } from 'react';
 import { usersApi } from '../../api';
 
@@ -20,11 +25,13 @@ export default function CreateStaffPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Validates the form data and displays a confirmation modal before submission.
   const handleInitialSubmit = (e) => {
     e.preventDefault();
     setConfirmModalOpen(true);
   };
 
+  // Submits the new staff account details to the backend API after confirmation.
   const handleSubmit = async () => {
     setConfirmModalOpen(false);
     setLoading(true);

@@ -1,3 +1,8 @@
+/*
+ * File: UserService.cs
+ * Description: Service layer handling business logic for user management, authentication, registration, and profiles.
+ * Author: IT23163904_WVADK Chamara
+ */
 using SolarGrid.Api.Models;
 using SolarGrid.Api.Repositories;
 
@@ -11,6 +16,7 @@ public class UserService
     private readonly IEmailService _emailService;
     private readonly Data.MongoDbContext _dbContext;
 
+    // Initializes the UserService with required repositories and services.
     public UserService(
         UserRepository userRepository,
         JwtService jwtService,
@@ -25,16 +31,19 @@ public class UserService
         _dbContext = dbContext;
     }
 
+    // Retrieves a user by their NIC.
     public async Task<User?> GetByNICAsync(string nic)
     {
         return await _userRepository.GetByNICAsync(nic);
     }
 
+    // Retrieves all registered users from the database.
     public async Task<List<User>> GetAllAsync()
     {
         return await _userRepository.GetAllAsync();
     }
 
+    // Retrieves all pending Prosumer registrations that have verified their emails.
     public async Task<List<User>> GetPendingUsersAsync()
     {
         var pending = await _pendingRegistrationRepository.GetEmailVerifiedAsync();
@@ -54,6 +63,7 @@ public class UserService
         }).ToList();
     }
 
+    // Creates a new user account with a hashed password directly, bypassing OTP verification.
     public async Task<(bool Success, string Message, User? User)> CreateUserAsync(
         User user,
         string password)
@@ -83,6 +93,7 @@ public class UserService
     }
 
     
+    // Initiates a Prosumer registration, validates NIC format, creates a pending record, and sends an OTP email.
     public async Task<(bool Success, string Message, string? RegistrationId)> StartRegistrationAsync(RegisterStartRequest request)
     {
         var normalizedNic = NicValidationHelper.Normalize(request.NIC);
@@ -131,6 +142,7 @@ public class UserService
         return (true, "A verification OTP has been sent to your email.", pending.RegistrationId);
     }
 
+    // Verifies the registration OTP provided by the user. If valid, marks the email as verified and account pending.
     public async Task<(bool Success, string Message, User? User)> VerifyOtpAsync(VerifyOtpRequest request)
     {
         var pending = await _pendingRegistrationRepository.GetByRegistrationIdAsync(request.RegistrationId);
@@ -177,6 +189,7 @@ public class UserService
         return (true, "Email verified successfully. Registration completed. Your account is pending Backoffice activation.", tempUser);
     }
 
+    // Generates and sends a new OTP for an existing pending registration.
     public async Task<(bool Success, string Message)> ResendOtpAsync(ResendOtpRequest request)
     {
         var pending = await _pendingRegistrationRepository.GetByRegistrationIdAsync(request.RegistrationId);
@@ -204,6 +217,7 @@ public class UserService
         return (true, "A new verification OTP has been sent.");
     }
 
+    // Creates a new staff account (Backoffice or Grid Operator) directly.
     public async Task<(bool Success, string Message, User? User)> CreateStaffAsync(
     User user,
     string password)
@@ -247,6 +261,7 @@ public class UserService
     return (true, "Staff account created successfully.", user);
 }
 
+    // Generates a password reset OTP and sends it to the user's email.
     public async Task<(bool Success, string Message)> ForgotPasswordAsync(string email)
     {
         var user = await _userRepository.GetByEmailAsync(email);
@@ -265,6 +280,7 @@ public class UserService
         return (true, "A password reset OTP has been sent to your email.");
     }
 
+    // Validates the password reset OTP and updates the user's password if valid.
     public async Task<(bool Success, string Message)> ResetPasswordAsync(string email, string otp, string newPassword)
     {
         var user = await _userRepository.GetByEmailAsync(email);
@@ -293,6 +309,7 @@ public class UserService
         return (true, "Password has been successfully changed.");
     }
 
+    // Updates an existing user's generic details in the database.
     public async Task<(bool Success, string Message)> UpdateUserAsync(User user)
     {
         var existingUser = await _userRepository.GetByNICAsync(user.NIC);
@@ -309,6 +326,7 @@ public class UserService
         return (true, "User updated successfully.");
     }
 
+    // Updates a user's editable profile information such as Name, Phone, Address, and Profile Picture.
     public async Task<(bool Success, string Message, User? User)> UpdateProfileAsync(string nic, UpdateProfileRequest request)
     {
         var existingUser = await _userRepository.GetByNICAsync(nic);
@@ -352,6 +370,7 @@ public class UserService
         return (true, "Profile updated successfully.", existingUser);
     }
 
+    // Processes a request from a Prosumer to voluntarily deactivate their own account.
     public async Task<(bool Success, string Message)> RequestDeactivationAsync(string nic)
     {
         var user = await _userRepository.GetByNICAsync(nic);
@@ -379,6 +398,7 @@ public class UserService
         return (true, "Account deactivated successfully.");
     }
 
+    // Immediately deactivates a specified user's account.
     public async Task<(bool Success, string Message)> DeactivateUserAsync(string nic)
     {
         var user = await _userRepository.GetByNICAsync(nic);
@@ -398,6 +418,7 @@ public class UserService
 
 
 
+    // Reactivates a previously deactivated user account, restoring their access.
     public async Task<(bool Success, string Message)> ReactivateUserAsync(string nic)
 {
     // Find the user account using the NIC.
@@ -426,6 +447,7 @@ public class UserService
     return (true, "User reactivated successfully.");
 }
 
+// Rejects a pending registration, deleting it and notifying the applicant of the reason via email.
 public async Task<(bool Success, string Message)> RejectRegistrationAsync(string nic, string reason)
 {
     var pending = await _pendingRegistrationRepository.GetByNicOrEmailAsync(nic, nic);
@@ -441,6 +463,7 @@ public async Task<(bool Success, string Message)> RejectRegistrationAsync(string
     return (true, "Registration rejected and user notified.");
 }
 
+    // Retrieves the URL of the user's uploaded NIC document.
     public async Task<string?> GetNicImageUrlAsync(string nic)
     {
         var user = await _userRepository.GetByNICAsync(nic);
@@ -458,6 +481,7 @@ public async Task<(bool Success, string Message)> RejectRegistrationAsync(string
         return null;
     }
 
+    // Uses OCR.space AI API to validate the uploaded NIC image against registered profile details.
     public async Task<(bool Success, string Message, string? AiResponse)> ValidateNicWithAiAsync(string nic)
     {
         var pending = await _pendingRegistrationRepository.GetByNicOrEmailAsync(nic, nic);
@@ -584,6 +608,7 @@ public async Task<(bool Success, string Message)> RejectRegistrationAsync(string
     }
 
 
+// Activates a pending account, migrating it from the pending registry to active users and notifying the user via email.
 public async Task<(bool Success, string Message)> ActivateUserAsync(string nic)
 {
     var pending = await _pendingRegistrationRepository.GetByNicOrEmailAsync(nic, nic);
@@ -638,6 +663,7 @@ public async Task<(bool Success, string Message)> ActivateUserAsync(string nic)
     return (true, "User activated successfully.");
 }
 
+// Deletes a user account entirely and sends a deletion notification email to the user.
 public async Task<(bool Success, string Message)> DeleteUserAsync(string nic)
 {
     var user = await _userRepository.GetByNICAsync(nic);
@@ -652,6 +678,7 @@ public async Task<(bool Success, string Message)> DeleteUserAsync(string nic)
 }
 
 
+    // Authenticates a user using their NIC or Email and Password. Checks account status and returns a JWT if valid.
     public async Task<(bool Success, string Message, LoginResponse? Response)> LoginAsync(
     string nicOrEmail,
     string password)
@@ -734,6 +761,7 @@ public async Task<(bool Success, string Message)> DeleteUserAsync(string nic)
 }
 
 
+// Initializes the very first Backoffice account in the system if none exist.
 public async Task<(bool Success, string Message, User? User)> InitializeBackofficeAsync(
     User user,
     string password)
@@ -775,6 +803,7 @@ public async Task<(bool Success, string Message, User? User)> InitializeBackoffi
     );
 }
 
+    // Initiates an email change process by sending an OTP to the proposed new email address.
     public async Task<(bool Success, string Message)> RequestEmailChangeAsync(string nic, string newEmail)
     {
         var user = await _userRepository.GetByNICAsync(nic);
@@ -800,6 +829,7 @@ public async Task<(bool Success, string Message, User? User)> InitializeBackoffi
         return (true, "An OTP has been sent to your new email address.");
     }
 
+    // Verifies the OTP for an email change request and permanently updates the user's email if valid.
     public async Task<(bool Success, string Message)> VerifyEmailChangeAsync(string nic, string otp)
     {
         var user = await _userRepository.GetByNICAsync(nic);

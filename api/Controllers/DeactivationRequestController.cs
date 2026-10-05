@@ -1,3 +1,8 @@
+/*
+ * File: DeactivationRequestController.cs
+ * Description: Controller for handling Prosumer account deactivation requests and Backoffice approvals/rejections.
+ * Author: IT23163904_WVADK Chamara
+ */
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +17,13 @@ public class DeactivationRequestController : ControllerBase
 {
     private readonly DeactivationRequestService _requestService;
 
+    // Initializes the DeactivationRequestController with the required service.
     public DeactivationRequestController(DeactivationRequestService requestService)
     {
         _requestService = requestService;
     }
 
+    // Allows a Prosumer to submit a formal request to deactivate their account.
     [Authorize(Roles = "PROSUMER")]
     [HttpPost("users/{nic}")]
     public async Task<IActionResult> CreateRequest(string nic, [FromBody] CreateDeactivationRequestDto dto)
@@ -34,6 +41,7 @@ public class DeactivationRequestController : ControllerBase
         return Ok(new { message = result.Message });
     }
 
+    // Retrieves all pending deactivation requests for review by the Backoffice.
     [Authorize(Roles = "BACKOFFICE")]
     [HttpGet("pending")]
     public async Task<IActionResult> GetPendingRequests()
@@ -42,6 +50,7 @@ public class DeactivationRequestController : ControllerBase
         return Ok(requests);
     }
 
+    // Approves a pending deactivation request, automatically deactivating the user's account.
     [Authorize(Roles = "BACKOFFICE")]
     [HttpPatch("{id}/approve")]
     public async Task<IActionResult> ApproveRequest(string id)
@@ -55,6 +64,7 @@ public class DeactivationRequestController : ControllerBase
         return Ok(new { message = result.Message });
     }
 
+    // Rejects a pending deactivation request with a provided reason, keeping the account active.
     [Authorize(Roles = "BACKOFFICE")]
     [HttpPatch("{id}/reject")]
     public async Task<IActionResult> RejectRequest(string id, [FromBody] RejectDeactivationRequestDto dto)

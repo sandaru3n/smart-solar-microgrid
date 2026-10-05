@@ -1,3 +1,8 @@
+/*
+ * File: ForgotPasswordPage.jsx
+ * Description: Provides the UI for Web users to initiate a password reset by requesting an OTP to their registered email.
+ * Author: IT23163904_WVADK Chamara
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api';
@@ -9,6 +14,7 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Handles the submission of the user's email address to request a password reset OTP.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

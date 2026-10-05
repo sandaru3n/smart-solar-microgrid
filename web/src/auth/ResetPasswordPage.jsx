@@ -1,3 +1,8 @@
+/*
+ * File: ResetPasswordPage.jsx
+ * Description: Provides the UI for Web users to verify their OTP and set a new password.
+ * Author: IT23163904_WVADK Chamara
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../api';
@@ -19,6 +24,7 @@ export default function ResetPasswordPage() {
     }
   }, [location]);
 
+  // Validates the new password format and submits the OTP and new password to the backend for reset.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

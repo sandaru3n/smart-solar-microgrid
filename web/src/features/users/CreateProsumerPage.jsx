@@ -1,3 +1,8 @@
+/*
+ * File: CreateProsumerPage.jsx
+ * Description: Provides a form for Backoffice administrators to manually create new Prosumer accounts in a pending state without requiring mobile OTP validation.
+ * Author: IT23163904_WVADK Chamara
+ */
 import { useState } from 'react';
 import { usersApi } from '../../api';
 
@@ -18,6 +23,7 @@ export default function CreateProsumerPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Submits the new Prosumer account details directly to the backend API.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

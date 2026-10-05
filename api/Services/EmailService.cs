@@ -1,3 +1,8 @@
+/*
+ * File: EmailService.cs
+ * Description: Service for handling SMTP email deliveries, including OTPs and account notifications.
+ * Author: IT23163904_WVADK Chamara
+ */
 using System.Net;
 using System.Net.Mail;
 using System.Text;
@@ -10,12 +15,14 @@ public class EmailService : IEmailService
     private readonly EmailSettings _settings;
     private readonly ILogger<EmailService> _logger;
 
+    // Initializes the EmailService with SMTP settings and a logger.
     public EmailService(EmailSettings settings, ILogger<EmailService> logger)
     {
         _settings = settings;
         _logger = logger;
     }
 
+    // Sends a registration or reset OTP to the specified email address asynchronously in a background thread.
     public async Task SendOtpEmailAsync(string toEmail, string otp)
     {
         try
@@ -55,6 +62,7 @@ public class EmailService : IEmailService
         }
     }
 
+    // Sends a plain-text email with the given subject and body to the specified email address in the background.
     public async Task SendEmailAsync(string toEmail, string subject, string body)
     {
         try
@@ -93,6 +101,7 @@ public class EmailService : IEmailService
         }
     }
 
+    // Sends a multipart email (plain-text and HTML) in a background thread to prevent blocking.
     public Task SendEmailAsync(string toEmail, string subject, string textBody, string htmlBody)
     {
         // Fire and forget like the other emails: a slow or failing SMTP server

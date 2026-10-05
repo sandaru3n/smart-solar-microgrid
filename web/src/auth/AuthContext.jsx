@@ -1,14 +1,21 @@
+/*
+ * File: AuthContext.jsx
+ * Description: Manages the authentication state, session storage, and login/logout flows for the web application.
+ * Author: IT23163904_WVADK Chamara
+ */
 import { createContext, useContext, useState } from 'react';
 import { authApi } from '../api';
 
 const AuthContext = createContext(null);
 
+// Provides the authentication context to the React component tree and initializes the user session from storage.
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
+  // Authenticates the user, validates their role/status, and saves their session data.
   const login = async (nic, password, rememberMe = false) => {
     const data = await authApi.login({ nic, password });
     
@@ -43,6 +50,7 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
+  // Clears the user's session data from storage and logs them out.
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -58,5 +66,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// Custom hook to access the authentication context.
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);
