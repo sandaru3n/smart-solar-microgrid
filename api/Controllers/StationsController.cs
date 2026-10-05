@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SolarGrid.Api.DTOs;
 using SolarGrid.Api.Models;
@@ -47,12 +48,16 @@ public class StationsController : ControllerBase
             station);
     }
 
-    // Gets all active stations.
+    // Gets stations. Active only by default; management views can request inactive too.
     [HttpGet]
-    public async Task<IActionResult> GetStations()
+    public async Task<IActionResult> GetStations([FromQuery] bool includeInactive = false)
     {
+        var filter = includeInactive
+            ? Builders<SolarStation>.Filter.Empty
+            : Builders<SolarStation>.Filter.Eq(station => station.IsActive, true);
+
         var stations = await _stations
-            .Find(station => station.IsActive)
+            .Find(filter)
             .ToListAsync();
 
         return Ok(stations);
@@ -92,6 +97,11 @@ public class StationsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetStation(string id)
     {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return NotFound(new { message = "Station not found." });
+        }
+
         var station = await _stations
             .Find(item => item.Id == id)
             .FirstOrDefaultAsync();
@@ -114,6 +124,11 @@ public class StationsController : ControllerBase
         [FromQuery] DateTime dateUtc,
         [FromQuery] bool includeFull = false)
     {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return NotFound(new { message = "Station not found." });
+        }
+
         var station = await _service.GetByIdAsync(id);
 
         if (station is null)
@@ -132,6 +147,11 @@ public class StationsController : ControllerBase
     [HttpGet("{id}/schedules")]
     public async Task<IActionResult> GetSchedules(string id)
     {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return NotFound(new { message = "Station not found." });
+        }
+
         var station = await _service.GetByIdAsync(id);
 
         if (station is null)
@@ -152,6 +172,11 @@ public class StationsController : ControllerBase
         string id,
         [FromBody] CreateScheduleRequest request)
     {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return NotFound(new { message = "Station not found." });
+        }
+
         var station = await _service.GetByIdAsync(id);
 
         if (station is null)
@@ -194,6 +219,11 @@ public class StationsController : ControllerBase
         string scheduleId,
         [FromBody] CreateScheduleRequest request)
     {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return NotFound(new { message = "Station not found." });
+        }
+
         var station = await _service.GetByIdAsync(id);
 
         if (station is null)
@@ -238,6 +268,10 @@ public class StationsController : ControllerBase
         string id,
         [FromBody] SolarStation station)
     {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return NotFound(new { message = "Station not found." });
+        }
         var existingStation = await _stations
             .Find(item => item.Id == id)
             .FirstOrDefaultAsync();
@@ -276,6 +310,11 @@ public class StationsController : ControllerBase
     [HttpPatch("{id}/deactivate")]
     public async Task<IActionResult> DeactivateStation(string id)
     {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return NotFound(new { message = "Station not found." });
+        }
+
         var station = await _stations
             .Find(item => item.Id == id)
             .FirstOrDefaultAsync();
@@ -311,6 +350,87 @@ public class StationsController : ControllerBase
         return Ok(new
         {
             message = "Station deactivated successfully."
+        });
+    }
+
+    // Reactivates an inactive station.
+    [HttpPatch("{id}/activate")]
+    public async Task<IActionResult> ActivateStation(string id)
+    {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return NotFound(new { message = "Station not found." });
+        }
+
+        var station = await _stations
+            .Find(item => item.Id == id)
+            .FirstOrDefaultAsync();
+
+        if (station is null)
+        {
+            return NotFound(new
+            {
+                message = "Station not found."
+            });
+        }
+
+        if (station.IsActive)
+        {
+            return Ok(new
+            {
+                message = "Station is already active."
+            });
+        }
+
+        var update = Builders<SolarStation>.Update
+            .Set(item => item.IsActive, true)
+            .Set(item => item.UpdatedAtUtc, DateTime.UtcNow);
+
+        await _stations.UpdateOneAsync(
+            item => item.Id == id,
+            update);
+
+        return Ok(new
+        {
+            message = "Station activated successfully."
+        });
+    }
+
+    // Permanently removes a station when no active reservations exist.
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteStation(string id)
+    {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return NotFound(new { message = "Station not found." });
+        }
+
+        var station = await _stations
+            .Find(item => item.Id == id)
+            .FirstOrDefaultAsync();
+
+        if (station is null)
+        {
+            return NotFound(new
+            {
+                message = "Station not found."
+            });
+        }
+
+        var deleted = await _service.DeleteAsync(id);
+
+        if (!deleted)
+        {
+            return Conflict(new
+            {
+                message =
+                    "Station cannot be deleted because active reservations exist."
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Station deleted successfully."
         });
     }
 

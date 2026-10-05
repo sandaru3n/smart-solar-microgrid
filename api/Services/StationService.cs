@@ -83,6 +83,30 @@ public class StationService
         return result.ModifiedCount > 0;
     }
 
+    public async Task<bool> ActivateAsync(string id)
+    {
+        var update = Builders<SolarStation>.Update
+            .Set(station => station.IsActive, true)
+            .Set(station => station.UpdatedAtUtc, DateTime.UtcNow);
+
+        var result = await _stations.UpdateOneAsync(
+            station => station.Id == id,
+            update);
+
+        return result.MatchedCount > 0;
+    }
+
+    public async Task<bool> DeleteAsync(string id)
+    {
+        if (await HasActiveReservationsAsync(id))
+        {
+            return false;
+        }
+
+        var result = await _stations.DeleteOneAsync(station => station.Id == id);
+        return result.DeletedCount > 0;
+    }
+
     public async Task<List<EnergyBookingSlot>> GetAvailableSlotsAsync(
         string stationId,
         DateTime dateUtc,
