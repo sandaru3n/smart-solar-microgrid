@@ -15,8 +15,9 @@ import { cardClass } from '../components/styles'
 import { Button } from '../components/ui'
 
 /*
- * One list screen, three modes:
+ * One list screen, four modes:
  *   all      — every status, status chips (single select: the API filters one status at a time)
+ *   open     — Pending and Approved only (the reservations menu page)
  *   pending  — fixed to Pending, with Approve / Reject
  *   history  — Completed / Rejected / Cancelled chips, with completion columns
  * Every filter lives in the URL query string, so links, refresh and Back keep them.
@@ -28,6 +29,14 @@ const MODES = {
     defaultStatus: '',
     emptyTitle: 'No reservations yet',
     emptyText: 'Reservations created by prosumers will appear here.',
+  },
+  open: {
+    title: 'All reservations',
+    statusOptions: [STATUS.Pending, STATUS.Approved],
+    defaultStatus: '',
+    combineStatuses: [STATUS.Pending, STATUS.Approved],
+    emptyTitle: 'No pending or approved reservations',
+    emptyText: 'Pending and approved reservations will appear here.',
   },
   pending: {
     title: 'Pending approvals',
@@ -49,6 +58,36 @@ const MODES = {
 
 const OBJECT_ID = /^[a-f\d]{24}$/i
 const DATE = /^\d{4}-\d{2}-\d{2}$/
+const FETCH_PAGE_SIZE = 50
+
+/** Loads every page for one status. The list API accepts only one status at a time. */
+async function listEveryPage(params) {
+  const first = await bookingsApi.list({ ...params, page: 1, pageSize: FETCH_PAGE_SIZE })
+  if (first.totalPages <= 1) return first.items
+  const rest = await Promise.all(
+    Array.from({ length: first.totalPages - 1 }, (_, index) =>
+      bookingsApi.list({ ...params, page: index + 2, pageSize: FETCH_PAGE_SIZE }).then((page) => page.items),
+    ),
+  )
+  return first.items.concat(...rest)
+}
+
+/** Pending and Approved together, newest first, then sliced to the requested page. */
+async function listCombined(params, statuses, page, pageSize) {
+  const groups = await Promise.all(statuses.map((status) => listEveryPage({ ...params, status })))
+  const items = groups.flat().sort((left, right) => {
+    const byTime = (Date.parse(right.createdAtUtc || '') || 0) - (Date.parse(left.createdAtUtc || '') || 0)
+    return byTime || String(right.id).localeCompare(String(left.id))
+  })
+  const start = (page - 1) * pageSize
+  return {
+    items: items.slice(start, start + pageSize),
+    page,
+    pageSize,
+    totalCount: items.length,
+    totalPages: items.length === 0 ? 0 : Math.ceil(items.length / pageSize),
+  }
+}
 
 function positiveInt(value, fallback) {
   const number = Number(value)
@@ -95,9 +134,17 @@ export default function ReservationListView({ mode }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = readFilters(searchParams, mode)
   const apiParams = toApiParams(filters)
+  const combineStatuses = config.combineStatuses && !filters.status ? config.combineStatuses : null
   const stations = useStations()
 
-  const query = useQuery(queryKeys.list(apiParams), () => bookingsApi.list(apiParams), { keepPreviousData: true })
+  const query = useQuery(
+    queryKeys.list(combineStatuses ? { ...apiParams, status: combineStatuses.join('+') } : apiParams),
+    () =>
+      combineStatuses
+        ? listCombined(apiParams, combineStatuses, filters.page, filters.size)
+        : bookingsApi.list(apiParams),
+    { keepPreviousData: true },
+  )
 
   useEffect(() => {
     document.title = `${config.title} · Smart Solar Microgrid`
@@ -201,7 +248,7 @@ export default function ReservationListView({ mode }) {
                 value: filters.status,
                 onChange: (status) => setFilters({ status: status === config.defaultStatus ? '' : status }),
                 options: config.statusOptions,
-                allLabel: mode === 'history' ? null : 'All',
+                allLabel: mode === 'history' ? null : mode === 'open' ? 'Pending & Approved' : 'All',
               }
             : undefined
         }

@@ -14,6 +14,7 @@ import ProfilePage from './features/users/ProfilePage'
 import App from './App.jsx'
 import HomePage from './features/home/HomePage.jsx'
 import ReservationsModule from './features/reservations/ReservationsModule.jsx'
+import ReservationsAllPage from './features/reservations/components/AllReservationsPage.jsx'
 import SlotLookupPage from './features/stations/components/SlotLookupPage.jsx'
 import CreateStationPage from './features/stations/components/CreateStationPage.jsx'
 import { DashboardEntry } from './features/dashboard/OperatorDashboard.jsx'
@@ -44,6 +45,9 @@ createRoot(document.getElementById('root')).render(
               <Route path="/dashboard/stations/create" element={<CreateStationPage />} />
               <Route path="/dashboard/weekly-schedule" element={<WeeklySchedulePage />} />
               <Route path="/dashboard/slot-lookup" element={<SlotLookupPage />} />
+            </Route>
+            <Route element={<ProtectedRoute roles={BOOKINGS_ROLES} />}>
+              <Route path="/reservations/all" element={<ReservationsAllPage />} />
             </Route>
             <Route path="/reservations/*" element={<ReservationsModule />} />
 
