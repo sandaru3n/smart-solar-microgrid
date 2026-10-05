@@ -1,5 +1,9 @@
+// StationPicker.jsx — Station cards used while creating or changing a booking.
+// Author: M.T.C PEIRIS  it23201200
+
 import { Icon } from './ui';
 
+// Lists stations and marks the one selected for the booking.
 export default function StationPicker({ stations, selectedId, onSelect }) {
   return (
     <div className="rm-station-grid" role="radiogroup" aria-label="Station">

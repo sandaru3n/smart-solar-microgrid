@@ -1,6 +1,10 @@
+// AllReservationsPage.jsx — Reservations menu page that lists pending and approved bookings.
+// Author: M.T.C PEIRIS  it23201200
+
 import BookingsProvider from '../../bookings/BookingsProvider'
 import ReservationListView from '../../bookings/pages/ReservationListView'
 
+// Shows pending and approved reservations for the Grid Operator menu.
 export default function AllReservationsPage() {
   return (
     <BookingsProvider>

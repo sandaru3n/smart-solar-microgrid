@@ -1,3 +1,6 @@
+// SlotPicker.jsx — Day and slot picker for the seven-day booking window.
+// Author: M.T.C PEIRIS  it23201200
+
 import { useMemo, useState } from 'react';
 import { TIME_ZONE, dayChipLabel, dayKey, formatTimeRange } from '../format';
 import { useNow } from '../hooks';
@@ -6,6 +9,7 @@ import { Icon } from './ui';
 
 const DAYS_SHOWN = 8;
 
+// Builds the days that can be booked, starting from today.
 function buildDays(now) {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
@@ -17,6 +21,7 @@ function buildDays(now) {
   });
 }
 
+// Returns the short label shown on a slot card.
 function slotTag(entry, remaining) {
   if (entry.isCurrent) return { label: 'Current booking', tone: 'primary', icon: 'event_available' };
   if (!entry.selectable) return { label: entry.reason, tone: 'danger', icon: 'block' };
@@ -26,14 +31,17 @@ function slotTag(entry, remaining) {
   return { label: `${hours} hr window`, tone: 'neutral', icon: null };
 }
 
+// Returns the weekday name for a booking day.
 function weekdayName(date) {
   return date.toLocaleDateString('en-US', { weekday: 'long' });
 }
 
+// Finds the station schedule that matches one weekday.
 function scheduleFor(schedules, day) {
   return schedules.find((item) => item.day === weekdayName(day)) ?? null;
 }
 
+// Lets the user pick an open slot inside the booking window.
 export default function SlotPicker({ station, slots, schedules = [], selectedSlotId, onSelect, currentSlotId }) {
   const now = useNow();
   const [chosenDay, setChosenDay] = useState(null);

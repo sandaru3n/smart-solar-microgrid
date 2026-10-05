@@ -1,3 +1,10 @@
+/**
+ * File: EnergyReservation.cs
+ * Purpose: MongoDB document for one energy-slot reservation.
+ * Author: M.T.C PEIRIS  it23201200
+ * Date: 2026
+ */
+
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -35,8 +42,8 @@ public class EnergyReservation
     /// </summary>
     public long Version { get; set; }
 
-    // Member 4 fields. Null until the matching status change happens.
 
+    // Member 4 fields. Null until the matching status change happens.
     public DateTime? ApprovedAtUtc { get; set; }
 
     public DateTime? RejectedAtUtc { get; set; }

@@ -1,3 +1,6 @@
+// ReservationsModule.jsx — Routes the web reservation screens for create, edit, cancel and summary.
+// Author: M.T.C PEIRIS  it23201200
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ActionSummary from './components/ActionSummary';
@@ -21,6 +24,7 @@ const PAGE_TITLES = {
   notFound: 'Page not found',
 };
 
+// Shows the reservation screen that matches the current address.
 export default function ReservationsModule() {
   const refData = useReferenceData();
   const route = useRoute();
@@ -41,9 +45,13 @@ export default function ReservationsModule() {
     document.title = title ? `${title} · ${APP_NAME}` : APP_NAME;
   }, [route.name]);
 
+  // Returns to the reservation list.
   const goHome = () => navigate(paths.home());
+  // Opens the create-booking form.
   const goCreate = () => navigate(paths.create());
+  // Opens the details screen for one reservation.
   const goDetails = (id) => navigate(paths.details(id));
+  // Opens the summary screen after create, update or cancel.
   const showSummary = (action) => (summary, previous = null) =>
     navigate(paths.summary(summary.reservationId, action), { state: { summary, previous } });
 

@@ -1,3 +1,6 @@
+// ReservationHome.jsx — Reservation list used to open, create, change or cancel a booking.
+// Author: M.T.C PEIRIS  it23201200
+
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { reservationsApi } from '../../../api.js';
@@ -6,6 +9,7 @@ import { canApprove } from '../../bookings/permissions';
 import { formatDate, formatTimeRange, initials } from '../format';
 import { ErrorNotice, Icon, Notice, PageHeader, Spinner, StatusBadge, StepHeader } from './ui';
 
+// Builds the station, prosumer and slot text for one list row.
 function bookingLabel(item, refData) {
   const name = refData.prosumerByNic.get(item.prosumerId)?.name ?? item.prosumerId;
   const stationName = item.stationName ?? refData.stationById.get(item.stationId)?.name ?? item.stationId;
@@ -18,6 +22,7 @@ function bookingLabel(item, refData) {
 
 const STATUSES = ['Pending', 'Approved', 'Cancelled', 'Rejected', 'Completed'];
 
+// Shows reservations and the actions that open create, details and decisions.
 export default function ReservationHome({ refData, onCreate, onOpen }) {
   const { user } = useAuth();
   const [reference, setReference] = useState('');
