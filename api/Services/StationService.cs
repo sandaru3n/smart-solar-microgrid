@@ -1,3 +1,9 @@
+/**
+ * File: StationService.cs
+ * Purpose: Station CRUD, available slots, schedules and reservation-aware activate/deactivate lifecycle.
+ * Author: M.S.N. Peiris it23201132
+ * Date: 2026
+ */
 using MongoDB.Driver;
 using SolarGrid.Api.Models;
 

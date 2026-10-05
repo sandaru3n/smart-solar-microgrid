@@ -1,3 +1,4 @@
+// NearbyPage.jsx — finds active stations within a radius of a chosen map coordinate.
 import { useState } from 'react'
 import { stationsApi } from '../../../api.js'
 
