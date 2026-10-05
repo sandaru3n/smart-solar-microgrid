@@ -56,7 +56,7 @@ export default function BookingsLayout() {
         <div className="flex flex-col gap-1">
           <p className="text-xs font-semibold uppercase tracking-wider text-secondary">Booking monitoring</p>
           <h1 className="text-2xl font-bold text-on-surface">
-            {user?.role === 'GRID_OPERATOR' ? 'Bookings History' : 'Bookings'}
+            {user?.role === 'GRID_OPERATOR' ? 'Booking Management' : 'Bookings'}
           </h1>
         </div>
 

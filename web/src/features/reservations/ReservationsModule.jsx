@@ -14,7 +14,6 @@ const APP_NAME = 'Smart Solar Microgrid';
 
 const PAGE_TITLES = {
   home: 'All reservations',
-  pending: 'Pending reservations',
   create: 'Create reservations',
   details: 'Reservation details',
   edit: 'Change booking',
@@ -52,10 +51,6 @@ export default function ReservationsModule() {
     <div className="rm-module">
       {route.name === 'home' && (
         <ReservationHome refData={refData} onCreate={goCreate} onOpen={goDetails} />
-      )}
-
-      {route.name === 'pending' && (
-        <ReservationHome view="pending" refData={refData} onCreate={goCreate} onOpen={goDetails} />
       )}
 
       {route.name === 'create' && (

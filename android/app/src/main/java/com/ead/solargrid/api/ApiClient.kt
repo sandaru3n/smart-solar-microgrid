@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
     // Using your local PC server so you can test all the brand new features!
-    private const val BASE_URL = "http://192.168.1.4:5257/"
+    private const val BASE_URL = "http://13.48.85.111:8080/"
 
     private var retrofit: Retrofit? = null
 

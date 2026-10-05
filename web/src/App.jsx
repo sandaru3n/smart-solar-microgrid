@@ -34,10 +34,9 @@ const getLinks = (role) => {
         children: [
           { to: '/reservations/all', label: 'All reservations', end: true, nested: true },
           { to: '/reservations/new', label: 'Create reservations', end: true, nested: true },
-          { to: '/reservations/pending', label: 'Pending reservations', end: true, nested: true },
         ],
       },
-      { to: '/bookings', label: 'Bookings History', end: false, icon: { line: '/histroy-line.png', solid: '/histroy-solid.png' } },
+      { to: '/bookings', label: 'Booking Management', end: false, icon: { line: '/histroy-line.png', solid: '/histroy-solid.png' } },
       { to: '/profile', label: 'My Profile', end: true, icon: { line: '/profile-line.png', solid: '/profile-solid.png' } },
     ]
   }
@@ -71,13 +70,10 @@ function isReservationNavActive(link, pathname, routerIsActive) {
     if (!pathname.startsWith('/reservations/')) return false
     const rest = pathname.slice('/reservations/'.length)
     const section = rest.split('/')[0]
-    return section !== 'new' && section !== 'pending' && section !== 'all'
+    return section !== 'new' && section !== 'all'
   }
   if (link.to === '/reservations/new') {
     return pathname === '/reservations/new' || pathname.startsWith('/reservations/new/')
-  }
-  if (link.to === '/reservations/pending') {
-    return pathname === '/reservations/pending' || pathname.startsWith('/reservations/pending/')
   }
   if (link.to === '/reservations/all') {
     return pathname === '/reservations/all' || pathname.startsWith('/reservations/all/')
@@ -88,7 +84,6 @@ function isReservationNavActive(link, pathname, routerIsActive) {
 function reservationCrumb(pathname) {
   if (pathname === '/reservations/all' || pathname.startsWith('/reservations/all/')) return 'All reservations'
   if (pathname === '/reservations/new' || pathname.startsWith('/reservations/new/')) return 'Create reservations'
-  if (pathname === '/reservations/pending' || pathname.startsWith('/reservations/pending/')) return 'Pending reservations'
   if (pathname === '/reservations' || pathname.startsWith('/reservations/')) return 'Reservations'
   return null
 }
@@ -253,7 +248,7 @@ export default function App() {
               {reservationCrumb(pathname) ||
                 (pathname.startsWith('/bookings')
                   ? user?.role === 'GRID_OPERATOR'
-                    ? 'Bookings History'
+                    ? 'Booking Management'
                     : 'Bookings'
                   : crumbs[pathname] || 'Dashboard')}
             </span>
