@@ -58,6 +58,7 @@ class MyReservationsFragment : Fragment() {
 
     private var pendingItems: List<ReservationItem> = emptyList()
     private var listFilter = BookingListFilter.BOTH
+    private var bookingQuery = ""
     private var selectedStation: SolarStation? = null
     private var loadedSlots: List<EnergyBookingSlotDto> = emptyList()
     private var selectedSlot: EnergyBookingSlotDto? = null
@@ -86,6 +87,14 @@ class MyReservationsFragment : Fragment() {
 
         binding.btnCreateBooking.setOnClickListener { startCreateBooking() }
         binding.btnPendingFilter.setOnClickListener { showBookingFilter() }
+        binding.etBookingSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                bookingQuery = s?.toString().orEmpty()
+                if (step == Step.LIST && pendingItems.isNotEmpty()) renderPendingBookings()
+            }
+        })
         binding.btnBookingBack.setOnClickListener { onBackPressed() }
         binding.btnBookingContinue.setOnClickListener { onContinue() }
         binding.btnConfirmBooking.setOnClickListener { confirmBooking() }
@@ -355,13 +364,27 @@ class MyReservationsFragment : Fragment() {
     }
 
     private fun visibleBookings(): List<ReservationItem> {
+        val query = bookingQuery.trim()
         return pendingItems.filter { item ->
-            when (listFilter) {
+            val statusMatch = when (listFilter) {
                 BookingListFilter.PENDING -> item.status.equals("Pending", ignoreCase = true)
                 BookingListFilter.APPROVED -> item.status.equals("Approved", ignoreCase = true)
                 BookingListFilter.BOTH -> true
             }
+            statusMatch && matchesBookingQuery(item, query)
         }
+    }
+
+    private fun matchesBookingQuery(item: ReservationItem, query: String): Boolean {
+        if (query.isEmpty()) return true
+        val station = item.stationName ?: item.stationId
+        val whenText = ReservationUi.formatSlotRange(item.slotStartTimeUtc, item.slotEndTimeUtc)
+        val reference = item.id.takeLast(8)
+        return station.contains(query, ignoreCase = true) ||
+            item.status.contains(query, ignoreCase = true) ||
+            item.id.contains(query, ignoreCase = true) ||
+            reference.contains(query, ignoreCase = true) ||
+            whenText.contains(query, ignoreCase = true)
     }
 
     private fun renderPendingBookings() {
@@ -381,10 +404,14 @@ class MyReservationsFragment : Fragment() {
         if (sorted.isEmpty()) {
             binding.tvPendingEmpty.isVisible = true
             binding.tvPendingEmpty.setText(
-                when (listFilter) {
-                    BookingListFilter.PENDING -> R.string.bookings_pending_empty
-                    BookingListFilter.APPROVED -> R.string.bookings_approved_empty
-                    BookingListFilter.BOTH -> R.string.bookings_active_empty
+                if (bookingQuery.isNotBlank()) {
+                    R.string.bookings_search_empty
+                } else {
+                    when (listFilter) {
+                        BookingListFilter.PENDING -> R.string.bookings_pending_empty
+                        BookingListFilter.APPROVED -> R.string.bookings_approved_empty
+                        BookingListFilter.BOTH -> R.string.bookings_active_empty
+                    }
                 }
             )
         } else {
