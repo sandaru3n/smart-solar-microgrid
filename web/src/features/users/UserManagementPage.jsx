@@ -9,12 +9,25 @@ export default function UserManagementPage() {
   
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [targetUser, setTargetUser] = useState(null);
-  const [targetAction, setTargetAction] = useState('');
+  const [targetAction, setTargetAction] = useState(''); // 'DEACTIVATED', 'ACTIVE', 'DELETE'
 
   const [pendingRequests, setPendingRequests] = useState([]);
   const [requestsModalOpen, setRequestsModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectingRequestId, setRejectingRequestId] = useState(null);
+
+  // Edit User State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', address: '' });
+
+  // Toast state
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -49,19 +62,43 @@ export default function UserManagementPage() {
     setConfirmModalOpen(true);
   };
 
-  const confirmStatusChange = async () => {
-    const action = targetAction === 'DEACTIVATED' ? 'deactivate' : 'reactivate';
+  const confirmAction = async () => {
     setConfirmModalOpen(false);
-
     try {
       if (targetAction === 'DEACTIVATED') {
         await usersApi.deactivate(targetUser.nic);
-      } else {
+      } else if (targetAction === 'ACTIVE') {
         await usersApi.reactivate(targetUser.nic);
+      } else if (targetAction === 'DELETE') {
+        await usersApi.deleteUser(targetUser.nic);
       }
       fetchUsers();
+      showToast(`User successfully ${targetAction === 'DEACTIVATED' ? 'deactivated' : targetAction === 'ACTIVE' ? 'reactivated' : 'deleted'}.`, 'success');
     } catch (err) {
-      alert(err.message || `Failed to ${action} user.`);
+      showToast(err.message || `Failed to perform action.`, 'error');
+    }
+  };
+
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setEditForm({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      address: user.address || ''
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await usersApi.adminUpdateUser(editingUser.nic, editForm);
+      setEditModalOpen(false);
+      fetchUsers();
+      showToast('User updated successfully.', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to update user.', 'error');
     }
   };
 
@@ -73,14 +110,15 @@ export default function UserManagementPage() {
       const updated = Array.isArray(data) ? data : [];
       setPendingRequests(updated);
       if (updated.length === 0) setRequestsModalOpen(false);
+      showToast('Request approved.', 'success');
     } catch (err) {
-      alert(err.message || 'Failed to approve request');
+      showToast(err.message || 'Failed to approve request', 'error');
     }
   };
 
   const rejectRequest = async () => {
     if (!rejectReason) {
-      alert("Please enter a rejection reason.");
+      showToast("Please enter a rejection reason.", "error");
       return;
     }
     try {
@@ -91,8 +129,9 @@ export default function UserManagementPage() {
       const updated = Array.isArray(data) ? data : [];
       setPendingRequests(updated);
       if (updated.length === 0) setRequestsModalOpen(false);
+      showToast('Request rejected.', 'success');
     } catch (err) {
-      alert(err.message || 'Failed to reject request');
+      showToast(err.message || 'Failed to reject request', 'error');
     }
   };
 
@@ -175,23 +214,37 @@ export default function UserManagementPage() {
                         {user.accountStatus}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      {user.accountStatus === 'ACTIVE' && (
+                    <td className="px-6 py-4">
+                      <div className="flex justify-end items-center gap-2">
+                        {user.accountStatus === 'ACTIVE' && (
+                          <button
+                            onClick={() => promptStatusChange(user, 'DEACTIVATED')}
+                            className="rounded-lg bg-yellow-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yellow-600 transition-colors whitespace-nowrap shadow-sm"
+                          >
+                            Deactivate
+                          </button>
+                        )}
+                        {user.accountStatus === 'DEACTIVATED' && (
+                          <button
+                            onClick={() => promptStatusChange(user, 'ACTIVE')}
+                            className="rounded-lg bg-green-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 transition-colors whitespace-nowrap shadow-sm"
+                          >
+                            Reactivate
+                          </button>
+                        )}
                         <button
-                          onClick={() => promptStatusChange(user, 'DEACTIVATED')}
-                          className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 transition-colors"
+                          onClick={() => openEditModal(user)}
+                          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary/90 transition-colors whitespace-nowrap shadow-sm"
                         >
-                          Deactivate
+                          Edit
                         </button>
-                      )}
-                      {user.accountStatus === 'DEACTIVATED' && (
                         <button
-                          onClick={() => promptStatusChange(user, 'ACTIVE')}
-                          className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary/90 transition-colors"
+                          onClick={() => promptStatusChange(user, 'DELETE')}
+                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors whitespace-nowrap shadow-sm"
                         >
-                          Reactivate
+                          Delete
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -261,10 +314,10 @@ export default function UserManagementPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl bg-surface-container-lowest p-6 shadow-xl border border-outline-variant/30">
             <h2 className="text-xl font-bold text-on-surface mb-2">
-              Confirm {targetAction === 'DEACTIVATED' ? 'Deactivation' : 'Reactivation'}
+              Confirm {targetAction === 'DEACTIVATED' ? 'Deactivation' : targetAction === 'DELETE' ? 'Deletion' : 'Reactivation'}
             </h2>
             <p className="text-sm text-secondary mb-6">
-              Are you sure you want to {targetAction === 'DEACTIVATED' ? 'deactivate' : 'reactivate'} user <strong>{targetUser.nic}</strong>?
+              Are you sure you want to {targetAction === 'DEACTIVATED' ? 'deactivate' : targetAction === 'DELETE' ? 'delete' : 'reactivate'} user <strong>{targetUser.nic}</strong>?
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -274,15 +327,93 @@ export default function UserManagementPage() {
                 Cancel
               </button>
               <button
-                onClick={confirmStatusChange}
+                onClick={confirmAction}
                 className={`rounded-lg px-6 py-2 font-semibold text-white transition-colors ${
-                  targetAction === 'DEACTIVATED' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary/90'
+                  targetAction === 'ACTIVE' ? 'bg-primary hover:bg-primary/90' : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
                 Confirm
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editModalOpen && editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl bg-surface-container-lowest p-6 shadow-xl border border-outline-variant/30">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-on-surface">Edit User Profile</h2>
+              <button onClick={() => setEditModalOpen(false)} className="text-secondary hover:text-on-surface">
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-on-surface">Name</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  className="w-full rounded-lg border border-outline-variant bg-surface px-4 py-2 text-on-surface focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-on-surface">Email</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                  className="w-full rounded-lg border border-outline-variant bg-surface px-4 py-2 text-on-surface focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-on-surface">Phone</label>
+                <input
+                  type="text"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                  className="w-full rounded-lg border border-outline-variant bg-surface px-4 py-2 text-on-surface focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-on-surface">Address</label>
+                <input
+                  type="text"
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({...editForm, address: e.target.value})}
+                  className="w-full rounded-lg border border-outline-variant bg-surface px-4 py-2 text-on-surface focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  className="rounded-lg px-4 py-2 font-semibold text-secondary hover:bg-secondary-container hover:text-on-secondary-container transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-primary px-6 py-2 font-semibold text-on-primary hover:bg-primary/90 transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.visible && (
+        <div className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-lg text-sm font-semibold transition-all duration-300 z-[100] ${
+          toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`}>
+          {toast.message}
         </div>
       )}
     </div>

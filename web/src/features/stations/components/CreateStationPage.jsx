@@ -66,6 +66,10 @@ export default function CreateStationPage() {
   const [notice, setNotice] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  function toast(type, text) {
+    setNotice({ type, text })
+  }
+
   function updateSchedule(day, patch) {
     setSchedules((current) => current.map((item) => (item.day === day ? { ...item, ...patch } : item)))
   }
@@ -74,7 +78,7 @@ export default function CreateStationPage() {
     event.preventDefault()
     const error = validateStation(form)
     if (error) {
-      setNotice(error)
+      toast('error', error)
       return
     }
     const prepared = schedules.map((item) => ({
@@ -84,7 +88,7 @@ export default function CreateStationPage() {
     }))
     const invalid = prepared.find((item) => item.closingTime <= item.openingTime)
     if (invalid) {
-      setNotice(`Closing time must be after opening time for ${invalid.day}.`)
+      toast('error', `Closing time must be after opening time for ${invalid.day}.`)
       return
     }
     setLoading(true)
@@ -98,9 +102,14 @@ export default function CreateStationPage() {
           isAvailable: item.isAvailable,
         })
       }
-      navigate('/dashboard/stations')
+      navigate('/dashboard/stations', {
+        state: {
+          notice: { type: 'ok', text: 'Station created successfully.' },
+          selectStationId: station.id,
+        },
+      })
     } catch (error) {
-      setNotice(error.message)
+      toast('error', error.message || 'Could not create station.')
     } finally {
       setLoading(false)
     }
@@ -108,6 +117,42 @@ export default function CreateStationPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      {notice && (
+        <div
+          role={notice.type === 'error' ? 'alert' : 'status'}
+          className={`fixed top-28 right-0 left-0 z-50 flex items-center justify-between gap-3 px-5 py-3.5 shadow-lg lg:top-14 lg:left-60 ${
+            notice.type === 'error'
+              ? 'bg-[#B91C1C] text-white'
+              : 'bg-[#15803D] text-white'
+          }`}
+        >
+          <div
+            className={`pointer-events-none absolute inset-y-0 left-0 w-3 ${
+              notice.type === 'error' ? 'bg-[#7F1D1D]' : 'bg-[#14532D]'
+            }`}
+          />
+          <div
+            className={`pointer-events-none absolute inset-y-0 right-0 w-3 ${
+              notice.type === 'error' ? 'bg-[#7F1D1D]' : 'bg-[#14532D]'
+            }`}
+          />
+          <div className="relative z-[1] flex min-w-0 items-center gap-3 pl-2">
+            <span className="material-symbols-outlined shrink-0 text-[22px]">
+              {notice.type === 'error' ? 'error' : 'check_circle'}
+            </span>
+            <p className="text-sm font-semibold tracking-wide sm:text-[15px]">{notice.text}</p>
+          </div>
+          <button
+            type="button"
+            className="relative z-[1] shrink-0 rounded-md p-1.5 text-white/85 hover:bg-white/15 hover:text-white"
+            onClick={() => setNotice(null)}
+            aria-label="Dismiss notice"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
         <Link to="/dashboard/stations" className="inline-flex w-fit items-center gap-1 text-label-md font-semibold text-primary">
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
@@ -118,12 +163,6 @@ export default function CreateStationPage() {
         </h1>
         <p className="text-secondary">Register a new solar station and its weekly hours.</p>
       </div>
-
-      {notice && (
-        <div className="rounded-xl border-l-4 border-[#B91C1C] bg-surface-container-lowest px-4 py-3 text-[#B91C1C] shadow-sm">
-          {notice}
-        </div>
-      )}
 
       <form className="flex flex-col gap-5 rounded-2xl bg-surface-container-lowest p-6 shadow-sm" onSubmit={handleCreate}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
