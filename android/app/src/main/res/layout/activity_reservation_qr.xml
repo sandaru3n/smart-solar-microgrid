@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Prosumer QR screen. States (loading / QR / expired / message) are switched in ReservationQrActivity. -->
+<!-- Prosumer QR screen. States (locked / loading / QR / expired / message) are switched in ReservationQrActivity. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -194,6 +194,88 @@
                         android:visibility="gone"
                         tools:text="Operators can scan it from Tue, Sep 29 · 09:30 AM"
                         tools:visibility="visible" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Shown instead of the QR until the prosumer verifies it's them (biometric / screen lock). -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/lockCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/dashboard_card"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="1dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <ImageView
+                        android:id="@+id/ivLock"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:background="@drawable/bg_solar_icon_circle"
+                        android:contentDescription="@string/qr_lock_icon_description"
+                        android:padding="18dp"
+                        android:src="@drawable/ic_qr_lock"
+                        app:tint="@color/solar_yellow_dark" />
+
+                    <TextView
+                        android:id="@+id/tvLockTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:accessibilityLiveRegion="polite"
+                        android:gravity="center"
+                        android:textColor="@color/dashboard_text"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        tools:text="Waiting for verification" />
+
+                    <TextView
+                        android:id="@+id/tvLockBody"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:accessibilityLiveRegion="polite"
+                        android:gravity="center"
+                        android:textColor="@color/dashboard_muted"
+                        android:textSize="14sp"
+                        tools:text="Confirm it's you to see your QR code." />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLockAction"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="16dp"
+                        android:minWidth="180dp"
+                        android:textAllCaps="false"
+                        android:textColor="@color/dashboard_text"
+                        android:textStyle="bold"
+                        app:backgroundTint="@color/solar_yellow"
+                        app:cornerRadius="14dp"
+                        tools:text="Try again" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLockBack"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:contentDescription="@string/qr_lock_back_description"
+                        android:minWidth="180dp"
+                        android:text="@string/qr_back"
+                        android:textAllCaps="false"
+                        android:textColor="@color/solar_yellow_dark"
+                        app:cornerRadius="14dp"
+                        app:strokeColor="@color/solar_yellow"
+                        app:strokeWidth="1dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

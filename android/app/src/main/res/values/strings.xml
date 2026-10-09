@@ -254,6 +254,28 @@
     <string name="qr_session_expired">Your session has expired. Please log in again.</string>
     <string name="qr_retry">Retry</string>
 
+    <!-- Prosumer: biometric / screen-lock gate before the QR is shown -->
+    <string name="qr_auth_prompt_title">Verify it\'s you</string>
+    <string name="qr_auth_prompt_subtitle">Unlock to show your reservation QR code</string>
+    <string name="qr_lock_icon_description">QR code locked</string>
+    <string name="qr_lock_waiting_title">Waiting for verification</string>
+    <string name="qr_lock_waiting_body">Confirm it\'s you to see your QR code.</string>
+    <string name="qr_lock_cancelled_title">QR code locked</string>
+    <string name="qr_lock_cancelled_body">Verify it\'s you to show your reservation QR code.</string>
+    <string name="qr_lock_lockout_title">Too many attempts</string>
+    <string name="qr_lock_lockout_body">Too many attempts. Try again later or use your screen lock.</string>
+    <string name="qr_lock_no_screen_lock_title">Screen lock required</string>
+    <string name="qr_lock_no_screen_lock_body">To keep your QR code safe, set up a screen lock (PIN, pattern, password or fingerprint) on this device, then come back.</string>
+    <string name="qr_lock_unavailable_title">Can\'t verify it\'s you</string>
+    <string name="qr_lock_unavailable_body">This device can\'t check your fingerprint, face or screen lock right now, so your QR code stays hidden.</string>
+    <string name="qr_lock_error_title">Something went wrong</string>
+    <string name="qr_lock_error_body">We couldn\'t verify it\'s you. Please try again.</string>
+    <string name="qr_lock_try_again">Try again</string>
+    <string name="qr_lock_try_again_description">Try verifying again to show your QR code</string>
+    <string name="qr_lock_open_settings">Open security settings</string>
+    <string name="qr_lock_open_settings_description">Open device security settings to set up a screen lock</string>
+    <string name="qr_lock_back_description">Back to your reservations</string>
+
     <!-- Grid Operator: scan, verify, complete -->
     <string name="scan_title">Scan QR</string>
     <string name="scan_hint">Point the camera at the prosumer\'s QR code</string>

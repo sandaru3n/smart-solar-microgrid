@@ -12,6 +12,8 @@ import com.ead.solargrid.qr.QrCodeRenderer
 import com.ead.solargrid.qr.QrRepository
 import com.ead.solargrid.qr.QrResult
 import com.ead.solargrid.qr.QrValidity
+import com.ead.solargrid.security.BiometricGate
+import com.ead.solargrid.security.GateState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -19,6 +21,9 @@ import kotlinx.coroutines.withContext
 import java.time.Instant
 
 sealed interface ReservationQrState {
+    /** Waiting on [BiometricGate]; nothing has been fetched. [gate] says why it is still locked. */
+    data class Locked(val gate: GateState) : ReservationQrState
+
     data object Loading : ReservationQrState
 
     /** [qrImage] is the only form the payload is kept in, and only in memory. */
@@ -46,21 +51,60 @@ class ReservationQrViewModel(application: Application) : AndroidViewModel(applic
     private val _state = MutableLiveData<ReservationQrState>()
     val state: LiveData<ReservationQrState> = _state
 
+    /** Lives only as long as this screen instance, so every new "Show QR" starts locked. */
+    private val gate = BiometricGate()
+
     private var reservationId: String? = null
     private var loadJob: Job? = null
 
-    /** Loads once per screen instance; a rotation reuses what is already in memory. */
+    /** Starts locked; the QR is fetched only after [onAuthSucceeded]. A rotation keeps the current state. */
     fun start(id: String) {
         if (reservationId == id && _state.value != null) return
         reservationId = id
-        load()
+        publishGate()
     }
 
-    /** Retry after an error, or "Refresh QR" after expiry: asks the server for a new payload. */
+    /** True when the screen should check the device and show the prompt. */
+    val needsPrompt: Boolean get() = gate.state == GateState.Idle
+
+    val isPrompting: Boolean get() = gate.state == GateState.Prompting
+
+    /** Takes `canAuthenticate`'s result; returns true when the prompt should be shown now. */
+    fun beginAuth(availability: Int): Boolean {
+        val show = gate.begin(availability)
+        publishGate()
+        return show
+    }
+
+    fun onAuthSucceeded() {
+        gate.onSucceeded()
+        if (gate.isUnlocked) load() else publishGate()
+    }
+
+    fun onAuthError(errorCode: Int) {
+        gate.onError(errorCode)
+        publishGate()
+    }
+
+    /** "Try again" after a cancel or error: back to Idle so the screen prompts again. */
+    fun retryAuth() {
+        if (gate.state == GateState.Prompting || gate.isUnlocked) return
+        gate.lock()
+        publishGate()
+    }
+
+    /**
+     * Retry after an error, or "Refresh QR" after expiry: asks the server for a new payload.
+     * Does nothing until the gate is unlocked; once it is, no new prompt is needed on this screen.
+     */
     fun load() {
         val id = reservationId ?: return
         if (loadJob?.isActive == true) return
 
+        gate.runIfUnlocked { fetch(id) }
+    }
+
+    private fun fetch(id: String) {
         loadJob = viewModelScope.launch {
             _state.value = ReservationQrState.Loading
             _state.value = when (val result = repository.getQr(id)) {
@@ -94,15 +138,21 @@ class ReservationQrViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    /** Drops the QR image as soon as the screen is left. */
-    fun clear() {
+    /** Drops the QR image and locks again: when the screen is left or goes to the background. */
+    fun lock() {
         loadJob?.cancel()
-        _state.value = ReservationQrState.Loading
+        gate.lock()
+        publishGate()
     }
 
     override fun onCleared() {
         loadJob?.cancel()
-        _state.value = ReservationQrState.Loading
+        gate.lock()
+        _state.value = ReservationQrState.Locked(gate.state)
+    }
+
+    private fun publishGate() {
+        _state.value = ReservationQrState.Locked(gate.state)
     }
 
     private companion object {

@@ -90,6 +90,9 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.4.1")
     implementation("androidx.camera:camera-view:1.4.1")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+    // Biometric / screen-lock gate in front of the prosumer's QR (local check only)
+    implementation("androidx.biometric:biometric:1.1.0")
     
     // Cloudinary
     implementation("com.cloudinary:cloudinary-android:2.5.0")

@@ -27,6 +27,8 @@ import com.ead.solargrid.database.SessionManager
 import com.ead.solargrid.databinding.ActivityReservationQrBinding
 import com.ead.solargrid.models.ReservationItem
 import com.ead.solargrid.qr.QrValidity
+import com.ead.solargrid.security.BiometricGatePrompt
+import com.ead.solargrid.security.GateState
 import com.ead.solargrid.ui.auth.LoginActivity
 import com.ead.solargrid.ui.home.ReservationUi
 import kotlinx.coroutines.delay
@@ -37,6 +39,9 @@ import java.time.Instant
  * Prosumer: shows the signed QR code for one Approved reservation, with a countdown to its
  * server-set expiry. The payload lives only in the ViewModel's memory (as the rendered image)
  * and is dropped when the screen is left. FLAG_SECURE keeps it out of screenshots and Recents.
+ *
+ * The QR is fetched only after the prosumer passes the biometric / screen-lock prompt, every
+ * time the screen is opened and again after it has been in the background.
  */
 class ReservationQrActivity : AppCompatActivity() {
 
@@ -46,6 +51,8 @@ class ReservationQrActivity : AppCompatActivity() {
         private const val EXTRA_SLOT_START = "slot_start"
         private const val EXTRA_SLOT_END = "slot_end"
         private const val BLUR_RADIUS = 18f
+        /** Not a BiometricPrompt code, so the gate treats it as a generic error. */
+        private const val UNEXPECTED_PROMPT_ERROR = -1
 
         fun newIntent(context: Context, item: ReservationItem): Intent =
             Intent(context, ReservationQrActivity::class.java)
@@ -57,6 +64,7 @@ class ReservationQrActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityReservationQrBinding
     private lateinit var viewModel: ReservationQrViewModel
+    private lateinit var gatePrompt: BiometricGatePrompt
     private val skeletonPulse by lazy {
         ObjectAnimator.ofFloat(binding.qrSkeleton, View.ALPHA, 1f, 0.45f).apply {
             duration = 700
@@ -89,6 +97,18 @@ class ReservationQrActivity : AppCompatActivity() {
         viewModel = ViewModelProvider(this)[ReservationQrViewModel::class.java]
         binding.btnRefresh.setOnClickListener { viewModel.load() }
         binding.btnRetry.setOnClickListener { viewModel.load() }
+        binding.btnLockBack.setOnClickListener { finish() }
+
+        // Created here (not later) so a prompt that is up during rotation reports to this instance.
+        gatePrompt = BiometricGatePrompt(
+            this,
+            getString(R.string.qr_auth_prompt_title),
+            getString(R.string.qr_auth_prompt_subtitle),
+            object : BiometricGatePrompt.Listener {
+                override fun onAuthSucceeded() = viewModel.onAuthSucceeded()
+                override fun onAuthError(errorCode: Int) = viewModel.onAuthError(errorCode)
+            }
+        )
 
         viewModel.state.observe(this, ::render)
         viewModel.start(reservationId)
@@ -104,13 +124,42 @@ class ReservationQrActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        if (::viewModel.isInitialized) promptIfLocked()
+    }
+
+    /**
+     * Leaving for the background hides the QR and locks again. Skipped on rotation, and while the
+     * prompt is up: on API 28-29 the screen-lock check is its own activity and stops this one.
+     */
+    override fun onStop() {
+        super.onStop()
+        if (::viewModel.isInitialized && !isChangingConfigurations && !viewModel.isPrompting) {
+            binding.ivQr.setImageDrawable(null)
+            viewModel.lock()
+        }
+    }
+
     override fun onDestroy() {
         if (::binding.isInitialized) skeletonPulse.cancel()
         if (isFinishing && ::binding.isInitialized) {
             binding.ivQr.setImageDrawable(null)
-            viewModel.clear()
+            viewModel.lock()
         }
         super.onDestroy()
+    }
+
+    private fun promptIfLocked() {
+        if (!viewModel.needsPrompt) return
+        if (viewModel.beginAuth(gatePrompt.availability())) {
+            try {
+                gatePrompt.show()
+            } catch (e: RuntimeException) {
+                // Fail closed: the QR stays hidden and the user gets "Try again".
+                viewModel.onAuthError(UNEXPECTED_PROMPT_ERROR)
+            }
+        }
     }
 
     /** targetSdk 35 is edge-to-edge on Android 15, so pad for the system bars on every version. */
@@ -127,10 +176,12 @@ class ReservationQrActivity : AppCompatActivity() {
 
     private fun render(state: ReservationQrState) {
         val ready = state as? ReservationQrState.Ready
+        val locked = state as? ReservationQrState.Locked
         val showQrCard = state is ReservationQrState.Loading || ready != null
 
         binding.qrCard.isVisible = showQrCard
-        binding.messageCard.isVisible = !showQrCard
+        binding.lockCard.isVisible = locked != null
+        binding.messageCard.isVisible = !showQrCard && locked == null
 
         binding.qrSkeleton.isVisible = state is ReservationQrState.Loading
         binding.ivQr.isVisible = ready != null
@@ -155,6 +206,7 @@ class ReservationQrActivity : AppCompatActivity() {
         }
 
         when (state) {
+            is ReservationQrState.Locked -> renderLock(state.gate)
             ReservationQrState.Inactive -> showMessage(
                 R.string.qr_inactive_title, getString(R.string.qr_inactive_message), retry = false
             )
@@ -180,6 +232,38 @@ class ReservationQrActivity : AppCompatActivity() {
                 finish()
             }
             else -> Unit
+        }
+    }
+
+    private fun renderLock(gate: GateState) {
+        val (title, body) = when (gate) {
+            GateState.Idle, GateState.Prompting, GateState.Authenticated ->
+                R.string.qr_lock_waiting_title to R.string.qr_lock_waiting_body
+            GateState.Cancelled -> R.string.qr_lock_cancelled_title to R.string.qr_lock_cancelled_body
+            GateState.LockedOut -> R.string.qr_lock_lockout_title to R.string.qr_lock_lockout_body
+            GateState.NoScreenLock ->
+                R.string.qr_lock_no_screen_lock_title to R.string.qr_lock_no_screen_lock_body
+            GateState.Unavailable -> R.string.qr_lock_unavailable_title to R.string.qr_lock_unavailable_body
+            GateState.Error -> R.string.qr_lock_error_title to R.string.qr_lock_error_body
+        }
+        binding.tvLockTitle.setText(title)
+        binding.tvLockBody.setText(body)
+
+        // While waiting there is nothing to tap; the system prompt is on top.
+        val waiting = gate == GateState.Idle || gate == GateState.Prompting || gate == GateState.Authenticated
+        binding.btnLockAction.isVisible = !waiting
+        binding.btnLockBack.isVisible = !waiting
+        if (gate == GateState.NoScreenLock) {
+            binding.btnLockAction.setText(R.string.qr_lock_open_settings)
+            binding.btnLockAction.contentDescription = getString(R.string.qr_lock_open_settings_description)
+            binding.btnLockAction.setOnClickListener { gatePrompt.openSecuritySettings() }
+        } else {
+            binding.btnLockAction.setText(R.string.qr_lock_try_again)
+            binding.btnLockAction.contentDescription = getString(R.string.qr_lock_try_again_description)
+            binding.btnLockAction.setOnClickListener {
+                viewModel.retryAuth()
+                promptIfLocked()
+            }
         }
     }
 
